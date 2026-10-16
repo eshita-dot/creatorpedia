@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import { MOCK_CREATORS, formatFollowers, regionLabel } from '@/lib/mock-data'

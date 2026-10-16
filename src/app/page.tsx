@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { redirect } from 'next/navigation'
 import { Search, Zap, Shield, TrendingUp } from 'lucide-react'
 
