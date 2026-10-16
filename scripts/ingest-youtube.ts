@@ -38,27 +38,142 @@ const DISCLOSURE_PATTERNS = [
 
 // ── Known Indian D2C brand names for matching ─────────────────────────────────
 const INDIAN_BRANDS: Record<string, { category: string; is_d2c: boolean }> = {
+  // Beauty & Skincare
   Nykaa: { category: 'Beauty Retail', is_d2c: false },
   Minimalist: { category: 'D2C Skincare', is_d2c: true },
   mCaffeine: { category: 'D2C Skincare', is_d2c: true },
   'Sugar Cosmetics': { category: 'D2C Makeup', is_d2c: true },
+  SUGAR: { category: 'D2C Makeup', is_d2c: true },
   Mamaearth: { category: 'D2C Personal Care', is_d2c: true },
   'Wow Skin Science': { category: 'D2C Skincare', is_d2c: true },
+  'WOW Skin Science': { category: 'D2C Skincare', is_d2c: true },
   'Plum Goodness': { category: 'D2C Skincare', is_d2c: true },
-  Zerodha: { category: 'Fintech', is_d2c: false },
-  Groww: { category: 'Fintech', is_d2c: false },
-  CRED: { category: 'Fintech', is_d2c: false },
-  Fi: { category: 'Fintech', is_d2c: false },
+  Plum: { category: 'D2C Skincare', is_d2c: true },
+  'Dot & Key': { category: 'D2C Skincare', is_d2c: true },
+  "Dot and Key": { category: 'D2C Skincare', is_d2c: true },
+  "Re'equil": { category: 'D2C Skincare', is_d2c: true },
+  Reequil: { category: 'D2C Skincare', is_d2c: true },
+  Pilgrim: { category: 'D2C Skincare', is_d2c: true },
+  Foxtale: { category: 'D2C Skincare', is_d2c: true },
+  'The Derma Co': { category: 'D2C Skincare', is_d2c: true },
+  'Derma Co': { category: 'D2C Skincare', is_d2c: true },
+  Fixderma: { category: 'D2C Skincare', is_d2c: true },
+  Aqualogica: { category: 'D2C Skincare', is_d2c: true },
+  'Just Herbs': { category: 'D2C Skincare', is_d2c: true },
+  'Forest Essentials': { category: 'Luxury Skincare', is_d2c: false },
+  'Kama Ayurveda': { category: 'Luxury Skincare', is_d2c: false },
+  Biotique: { category: 'Ayurvedic Beauty', is_d2c: false },
+  Himalaya: { category: 'Personal Care', is_d2c: false },
+  'Lotus Herbals': { category: 'D2C Skincare', is_d2c: true },
+  Lakme: { category: 'Beauty Retail', is_d2c: false },
+  Colorbar: { category: 'Makeup', is_d2c: false },
+  'NY Bae': { category: 'D2C Makeup', is_d2c: true },
+  'Swiss Beauty': { category: 'D2C Makeup', is_d2c: true },
+  'Insight Cosmetics': { category: 'D2C Makeup', is_d2c: true },
+  'Faces Canada': { category: 'Makeup', is_d2c: false },
+  Lakmé: { category: 'Beauty Retail', is_d2c: false },
+  'Pilgrim India': { category: 'D2C Skincare', is_d2c: true },
+  Slay: { category: 'D2C Makeup', is_d2c: true },
+  'Nykaa Fashion': { category: 'Fashion Retail', is_d2c: false },
+  'Good Vibes': { category: 'D2C Skincare', is_d2c: true },
+  StBotanica: { category: 'D2C Skincare', is_d2c: true },
+  'Bella Vita': { category: 'D2C Personal Care', is_d2c: true },
+  'Bella Vita Organic': { category: 'D2C Personal Care', is_d2c: true },
+  'Tru Hair': { category: 'D2C Hair Care', is_d2c: true },
+  Vegamour: { category: 'Hair Care', is_d2c: false },
+  Marico: { category: 'Personal Care', is_d2c: false },
+  Parachute: { category: 'Hair Care', is_d2c: false },
+  Indulekha: { category: 'Hair Care', is_d2c: false },
+  // Fashion
   Myntra: { category: 'Fashion Retail', is_d2c: false },
   Bewakoof: { category: 'D2C Fashion', is_d2c: true },
   Virgio: { category: 'D2C Fashion', is_d2c: true },
-  boAt: { category: 'D2C Audio', is_d2c: true },
-  Noise: { category: 'D2C Wearables', is_d2c: true },
+  AJIO: { category: 'Fashion Retail', is_d2c: false },
+  Meesho: { category: 'Social Commerce', is_d2c: false },
+  FabIndia: { category: 'Fashion Retail', is_d2c: false },
+  Libas: { category: 'D2C Fashion', is_d2c: true },
+  Anouk: { category: 'D2C Fashion', is_d2c: true },
+  Clovia: { category: 'D2C Lingerie', is_d2c: true },
+  Zivame: { category: 'D2C Lingerie', is_d2c: true },
+  Campus: { category: 'Footwear', is_d2c: false },
+  Bata: { category: 'Footwear', is_d2c: false },
+  Mochi: { category: 'Footwear', is_d2c: false },
+  // Finance & Fintech
+  Zerodha: { category: 'Fintech', is_d2c: false },
+  Groww: { category: 'Fintech', is_d2c: false },
+  CRED: { category: 'Fintech', is_d2c: false },
+  Upstox: { category: 'Fintech', is_d2c: false },
+  Smallcase: { category: 'Fintech', is_d2c: false },
+  'Angel One': { category: 'Fintech', is_d2c: false },
+  'Angel Broking': { category: 'Fintech', is_d2c: false },
+  Jupiter: { category: 'Neobank', is_d2c: false },
+  'Fi Money': { category: 'Neobank', is_d2c: false },
+  Fi: { category: 'Neobank', is_d2c: false },
+  INDmoney: { category: 'Fintech', is_d2c: false },
+  Niyo: { category: 'Neobank', is_d2c: false },
+  Paytm: { category: 'Fintech', is_d2c: false },
+  PhonePe: { category: 'Fintech', is_d2c: false },
+  Razorpay: { category: 'Fintech', is_d2c: false },
+  // Food & Beverage
   Swiggy: { category: 'Food Delivery', is_d2c: false },
   Zomato: { category: 'Food Delivery', is_d2c: false },
+  'Paper Boat': { category: 'D2C Beverages', is_d2c: true },
+  Epigamia: { category: 'D2C Food', is_d2c: true },
+  'Slurrp Farm': { category: 'D2C Food', is_d2c: true },
+  'The Whole Truth': { category: 'D2C Food', is_d2c: true },
+  'Yoga Bar': { category: 'D2C Health Food', is_d2c: true },
+  'True Elements': { category: 'D2C Health Food', is_d2c: true },
+  Bira: { category: 'Beverages', is_d2c: false },
+  'Wow Momo': { category: 'QSR', is_d2c: false },
+  Licious: { category: 'D2C Meat', is_d2c: true },
+  'Country Delight': { category: 'D2C Dairy', is_d2c: true },
+  Wingreens: { category: 'D2C Snacks', is_d2c: true },
+  'Too Yumm': { category: 'D2C Snacks', is_d2c: true },
+  Millet: { category: 'D2C Health Food', is_d2c: true },
+  Saffola: { category: 'Health Food', is_d2c: false },
+  // Tech & Electronics
+  boAt: { category: 'D2C Audio', is_d2c: true },
+  Noise: { category: 'D2C Wearables', is_d2c: true },
   OnePlus: { category: 'Consumer Electronics', is_d2c: false },
   Realme: { category: 'Consumer Electronics', is_d2c: false },
+  Redmi: { category: 'Consumer Electronics', is_d2c: false },
+  Xiaomi: { category: 'Consumer Electronics', is_d2c: false },
+  IQOO: { category: 'Consumer Electronics', is_d2c: false },
+  Nothing: { category: 'Consumer Electronics', is_d2c: false },
+  Samsung: { category: 'Consumer Electronics', is_d2c: false },
+  Portronics: { category: 'D2C Electronics', is_d2c: true },
+  Zebronics: { category: 'D2C Electronics', is_d2c: true },
+  Ambrane: { category: 'D2C Electronics', is_d2c: true },
+  // Health & Fitness
+  HealthifyMe: { category: 'Health Tech', is_d2c: false },
+  'Cult.fit': { category: 'Fitness', is_d2c: false },
+  Fittr: { category: 'Fitness', is_d2c: false },
+  MuscleBlaze: { category: 'D2C Nutrition', is_d2c: true },
+  Oziva: { category: 'D2C Nutrition', is_d2c: true },
+  'Health Kart': { category: 'Nutrition Retail', is_d2c: false },
+  HealthKart: { category: 'Nutrition Retail', is_d2c: false },
+  Wellbeing: { category: 'D2C Nutrition', is_d2c: true },
+  'Tata 1mg': { category: 'Health Tech', is_d2c: false },
+  '1mg': { category: 'Health Tech', is_d2c: false },
+  Pharmeasy: { category: 'Health Tech', is_d2c: false },
+  // General / E-commerce
+  Amazon: { category: 'E-commerce', is_d2c: false },
+  Flipkart: { category: 'E-commerce', is_d2c: false },
   Spotify: { category: 'Music Streaming', is_d2c: false },
+  Audible: { category: 'Audio Books', is_d2c: false },
+  Skillshare: { category: 'EdTech', is_d2c: false },
+  Coursera: { category: 'EdTech', is_d2c: false },
+  Unacademy: { category: 'EdTech', is_d2c: false },
+  Vedantu: { category: 'EdTech', is_d2c: false },
+  'Byju\'s': { category: 'EdTech', is_d2c: false },
+  Byjus: { category: 'EdTech', is_d2c: false },
+  Lenskart: { category: 'D2C Eyewear', is_d2c: true },
+  Wakefit: { category: 'D2C Furniture', is_d2c: true },
+  Pepperfry: { category: 'Furniture', is_d2c: false },
+  'Urban Company': { category: 'Home Services', is_d2c: false },
+  Dunzo: { category: 'Quick Commerce', is_d2c: false },
+  Blinkit: { category: 'Quick Commerce', is_d2c: false },
+  Zepto: { category: 'Quick Commerce', is_d2c: false },
 }
 
 interface YouTubeChannel {
@@ -146,23 +261,37 @@ async function fetchRecentVideos(
   channelId: string,
   maxResults = 30
 ): Promise<YouTubeVideo[]> {
-  const url = new URL('https://www.googleapis.com/youtube/v3/search')
-  url.searchParams.set('part', 'snippet')
-  url.searchParams.set('channelId', channelId)
-  url.searchParams.set('type', 'video')
-  url.searchParams.set('order', 'date')
-  url.searchParams.set('maxResults', String(maxResults))
-  url.searchParams.set('key', YOUTUBE_API_KEY)
+  // Step 1: get video IDs (search.list returns truncated descriptions)
+  const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search')
+  searchUrl.searchParams.set('part', 'id')
+  searchUrl.searchParams.set('channelId', channelId)
+  searchUrl.searchParams.set('type', 'video')
+  searchUrl.searchParams.set('order', 'date')
+  searchUrl.searchParams.set('maxResults', String(maxResults))
+  searchUrl.searchParams.set('key', YOUTUBE_API_KEY)
 
-  const res = await fetch(url.toString())
-  const data = await res.json()
+  const searchRes = await fetch(searchUrl.toString())
+  const searchData = await searchRes.json()
+  const videoIds: string[] = (searchData.items ?? []).map(
+    (item: { id: { videoId: string } }) => item.id.videoId
+  )
+  if (videoIds.length === 0) return []
 
-  return (data.items ?? []).map(
+  // Step 2: fetch full descriptions via videos.list
+  const videosUrl = new URL('https://www.googleapis.com/youtube/v3/videos')
+  videosUrl.searchParams.set('part', 'snippet')
+  videosUrl.searchParams.set('id', videoIds.join(','))
+  videosUrl.searchParams.set('key', YOUTUBE_API_KEY)
+
+  const videosRes = await fetch(videosUrl.toString())
+  const videosData = await videosRes.json()
+
+  return (videosData.items ?? []).map(
     (item: {
-      id: { videoId: string }
+      id: string
       snippet: { title: string; description: string; publishedAt: string; channelId: string }
     }) => ({
-      videoId: item.id.videoId,
+      videoId: item.id,
       title: item.snippet.title,
       description: item.snippet.description,
       publishedAt: item.snippet.publishedAt,
