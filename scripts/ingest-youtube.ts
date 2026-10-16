@@ -195,41 +195,146 @@ interface YouTubeVideo {
 
 // ── YouTube API helpers ───────────────────────────────────────────────────────
 
+interface CategoryConfig {
+  queries: string[]
+  language?: string  // omit to search all languages
+  knownHandles?: string[]  // seed known big creators by handle
+}
+
+const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
+  beauty: {
+    queries: [
+      'Indian beauty skincare influencer #ad sponsored',
+      'Indian makeup tutorial skincare review sponsored',
+    ],
+    language: 'hi',
+  },
+  finance: {
+    queries: [
+      'India finance YouTuber Zerodha Groww CRED investing',
+      'India personal finance stock market investing English',
+    ],
+    knownHandles: [
+      'CArachanaranade', 'akshat_shrivastava8', 'PranjalKamraFinancials',
+      'labourlawadvisor', 'warikoo', 'nikhilkamathofficial',
+      'FinancialEducationbyCA', 'InvestmentMonk',
+    ],
+  },
+  food: {
+    queries: [
+      'Indian food blogger recipe YouTube',
+    ],
+    knownHandles: [
+      'SanjeevKapoorKhazana', 'RanveerBrar', 'YourFoodLab',
+      'FoodPharmer', 'nikyoofood', 'KabitasKitchen',
+    ],
+  },
+  fitness: {
+    queries: [
+      'India fitness workout YouTube gym',
+    ],
+    knownHandles: [
+      'FitTuber', 'GuruMannFitness', 'YatinderSinghFitness',
+      'nikhilfit', 'cultfit', 'GrandmasterShifuji',
+    ],
+  },
+  fashion: {
+    queries: [
+      'Indian fashion YouTuber OOTD haul Myntra AJIO',
+      'India fashion lifestyle influencer YouTube sponsored',
+    ],
+  },
+  tech: {
+    queries: [
+      'India tech review YouTube smartphone OnePlus Xiaomi boAt',
+      'Indian tech YouTuber gadget review English',
+    ],
+    knownHandles: [
+      'TechBurner', 'trakintech', 'geekyranjit', 'TechnicalGuruji',
+      'MrPhoneOfficial', 'beebomco', 'GadgetsToUse', 'techbar',
+    ],
+  },
+  travel: {
+    queries: [
+      'Indian travel vlog YouTube',
+    ],
+    knownHandles: [
+      'MumbikerNikhil', 'abhiandniyu', 'TheUniqueBrotherhood',
+      'NomadsWorld', 'Varun_Vagish',
+    ],
+  },
+  entertainment: {
+    queries: [
+      'Indian entertainment YouTube creator',
+      'India comedy vlog YouTube sponsored',
+    ],
+  },
+}
+
 async function searchIndianChannels(
   category: string,
   maxResults = 50
 ): Promise<YouTubeChannel[]> {
-  const queries: Record<string, string> = {
-    beauty: 'Indian beauty skincare influencer Hindi',
-    finance: 'Indian personal finance investing YouTube Hindi',
-    food: 'Indian food recipe blogger YouTube',
-    fitness: 'Indian fitness workout YouTube Hindi',
-    fashion: 'Indian fashion OOTD haul YouTube',
-    tech: 'tech review Hindi Indian YouTube channel',
-    travel: 'Indian travel vlog YouTube',
-    entertainment: 'Indian entertainment YouTube creator',
+  const config = CATEGORY_CONFIG[category] ?? {
+    queries: [`Indian ${category} YouTuber`],
   }
 
-  const q = queries[category] ?? `Indian ${category} YouTuber`
-  const url = new URL('https://www.googleapis.com/youtube/v3/search')
-  url.searchParams.set('part', 'snippet')
-  url.searchParams.set('q', q)
-  url.searchParams.set('type', 'channel')
-  url.searchParams.set('regionCode', 'IN')
-  url.searchParams.set('relevanceLanguage', 'hi')
-  url.searchParams.set('maxResults', String(Math.min(maxResults, 50)))
-  url.searchParams.set('key', YOUTUBE_API_KEY)
+  const seenIds = new Set<string>()
+  const allChannelIds: string[] = []
 
-  const res = await fetch(url.toString())
-  const data = await res.json()
+  const perQuery = Math.ceil(maxResults / config.queries.length)
 
-  const channelIds: string[] = (data.items ?? []).map(
-    (item: { id: { channelId: string } }) => item.id.channelId
-  )
+  for (const q of config.queries) {
+    const url = new URL('https://www.googleapis.com/youtube/v3/search')
+    url.searchParams.set('part', 'snippet')
+    url.searchParams.set('q', q)
+    url.searchParams.set('type', 'channel')
+    url.searchParams.set('regionCode', 'IN')
+    if (config.language) url.searchParams.set('relevanceLanguage', config.language)
+    url.searchParams.set('maxResults', String(Math.min(perQuery, 50)))
+    url.searchParams.set('key', YOUTUBE_API_KEY)
 
-  if (channelIds.length === 0) return []
+    const res = await fetch(url.toString())
+    const data = await res.json()
 
-  return fetchChannelDetails(channelIds)
+    for (const item of data.items ?? []) {
+      const id = item.id.channelId as string
+      if (!seenIds.has(id)) {
+        seenIds.add(id)
+        allChannelIds.push(id)
+      }
+    }
+
+    await new Promise((r) => setTimeout(r, 200))
+  }
+
+  // Also resolve known handles directly
+  if (config.knownHandles?.length) {
+    for (const handle of config.knownHandles) {
+      const url = new URL('https://www.googleapis.com/youtube/v3/channels')
+      url.searchParams.set('part', 'id')
+      url.searchParams.set('forHandle', handle)
+      url.searchParams.set('key', YOUTUBE_API_KEY)
+      const res = await fetch(url.toString())
+      const data = await res.json()
+      const id = data.items?.[0]?.id as string | undefined
+      if (id && !seenIds.has(id)) {
+        seenIds.add(id)
+        allChannelIds.push(id)
+      }
+      await new Promise((r) => setTimeout(r, 100))
+    }
+  }
+
+  if (allChannelIds.length === 0) return []
+
+  // Fetch details in batches of 50 (API max)
+  const batches: string[][] = []
+  for (let i = 0; i < allChannelIds.length; i += 50) {
+    batches.push(allChannelIds.slice(i, i + 50))
+  }
+  const results = await Promise.all(batches.map(fetchChannelDetails))
+  return results.flat()
 }
 
 async function fetchChannelDetails(channelIds: string[]): Promise<YouTubeChannel[]> {
@@ -257,36 +362,37 @@ async function fetchChannelDetails(channelIds: string[]): Promise<YouTubeChannel
   )
 }
 
-async function fetchRecentVideos(
-  channelId: string,
-  maxResults = 30
-): Promise<YouTubeVideo[]> {
-  // Step 1: get video IDs (search.list returns truncated descriptions)
-  const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search')
-  searchUrl.searchParams.set('part', 'id')
-  searchUrl.searchParams.set('channelId', channelId)
-  searchUrl.searchParams.set('type', 'video')
-  searchUrl.searchParams.set('order', 'date')
-  searchUrl.searchParams.set('maxResults', String(maxResults))
-  searchUrl.searchParams.set('key', YOUTUBE_API_KEY)
+async function fetchUploadsPlaylistId(channelId: string): Promise<string | null> {
+  const url = new URL('https://www.googleapis.com/youtube/v3/channels')
+  url.searchParams.set('part', 'contentDetails')
+  url.searchParams.set('id', channelId)
+  url.searchParams.set('key', YOUTUBE_API_KEY)
+  const res = await fetch(url.toString())
+  const data = await res.json()
+  return data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? null
+}
 
-  const searchRes = await fetch(searchUrl.toString())
-  const searchData = await searchRes.json()
-  const videoIds: string[] = (searchData.items ?? []).map(
-    (item: { id: { videoId: string } }) => item.id.videoId
+async function fetchVideoIdsFromPlaylist(playlistId: string, maxResults: number): Promise<string[]> {
+  const url = new URL('https://www.googleapis.com/youtube/v3/playlistItems')
+  url.searchParams.set('part', 'contentDetails')
+  url.searchParams.set('playlistId', playlistId)
+  url.searchParams.set('maxResults', String(Math.min(maxResults, 50)))
+  url.searchParams.set('key', YOUTUBE_API_KEY)
+  const res = await fetch(url.toString())
+  const data = await res.json()
+  return (data.items ?? []).map(
+    (item: { contentDetails: { videoId: string } }) => item.contentDetails.videoId
   )
-  if (videoIds.length === 0) return []
+}
 
-  // Step 2: fetch full descriptions via videos.list
-  const videosUrl = new URL('https://www.googleapis.com/youtube/v3/videos')
-  videosUrl.searchParams.set('part', 'snippet')
-  videosUrl.searchParams.set('id', videoIds.join(','))
-  videosUrl.searchParams.set('key', YOUTUBE_API_KEY)
-
-  const videosRes = await fetch(videosUrl.toString())
-  const videosData = await videosRes.json()
-
-  return (videosData.items ?? []).map(
+async function fetchVideoDetails(videoIds: string[]): Promise<YouTubeVideo[]> {
+  const url = new URL('https://www.googleapis.com/youtube/v3/videos')
+  url.searchParams.set('part', 'snippet')
+  url.searchParams.set('id', videoIds.join(','))
+  url.searchParams.set('key', YOUTUBE_API_KEY)
+  const res = await fetch(url.toString())
+  const data = await res.json()
+  return (data.items ?? []).map(
     (item: {
       id: string
       snippet: { title: string; description: string; publishedAt: string; channelId: string }
@@ -298,6 +404,18 @@ async function fetchRecentVideos(
       channelId: item.snippet.channelId,
     })
   )
+}
+
+async function fetchRecentVideos(
+  channelId: string,
+  maxResults = 30
+): Promise<YouTubeVideo[]> {
+  // Use uploads playlist — reliable for all channels, no search quota hit
+  const playlistId = await fetchUploadsPlaylistId(channelId)
+  if (!playlistId) return []
+  const videoIds = await fetchVideoIdsFromPlaylist(playlistId, maxResults)
+  if (videoIds.length === 0) return []
+  return fetchVideoDetails(videoIds)
 }
 
 // ── Disclosure detection ──────────────────────────────────────────────────────
