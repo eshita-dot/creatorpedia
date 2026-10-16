@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { redirect } from 'next/navigation'
 import { Search, Zap, Shield, TrendingUp } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 
 const CATEGORIES = ['Beauty', 'Fashion', 'Finance', 'Food', 'Fitness', 'Tech', 'Travel', 'Gaming']
 const PLATFORMS = ['Instagram', 'YouTube', 'Both']
@@ -21,7 +22,14 @@ async function handleSearch(formData: FormData) {
   redirect(`/search?${params.toString()}`)
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient()
+  const [{ count: creatorCount }, { count: collabCount }, { count: brandCount }] =
+    await Promise.all([
+      supabase.from('creators').select('*', { count: 'exact', head: true }),
+      supabase.from('collaborations').select('*', { count: 'exact', head: true }),
+      supabase.from('brands').select('*', { count: 'exact', head: true }),
+    ])
   return (
     <div className="flex flex-col">
       {/* Hero */}
@@ -113,9 +121,9 @@ export default function HomePage() {
       <section className="border-y border-border bg-muted/30">
         <div className="mx-auto grid max-w-4xl grid-cols-3 divide-x divide-border">
           {[
-            { label: 'Creators Indexed', value: '4.2M+' },
-            { label: 'Brand Collabs Tracked', value: '89K+' },
-            { label: 'Indian Brands in DB', value: '3,400+' },
+            { label: 'Creators Indexed', value: (creatorCount ?? 0).toLocaleString('en-IN') },
+            { label: 'Brand Collabs Tracked', value: (collabCount ?? 0).toLocaleString('en-IN') },
+            { label: 'Indian Brands in DB', value: (brandCount ?? 0).toLocaleString('en-IN') },
           ].map((s) => (
             <div key={s.label} className="flex flex-col items-center py-5 px-4">
               <span className="text-2xl font-bold text-amber-500">{s.value}</span>
