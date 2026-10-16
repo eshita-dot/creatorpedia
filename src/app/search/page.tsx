@@ -2,8 +2,9 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { Search, SlidersHorizontal } from 'lucide-react'
-import { MOCK_CREATORS, formatFollowers, regionLabel } from '@/lib/mock-data'
-import type { SearchResult, Category, Platform, Region } from '@/types'
+import { createClient } from '@/lib/supabase/server'
+import { formatFollowers, regionLabel } from '@/lib/mock-data'
+import type { SearchResult } from '@/types'
 
 interface SearchPageProps {
   searchParams: Promise<{
@@ -12,37 +13,6 @@ interface SearchPageProps {
     platform?: string
     region?: string
   }>
-}
-
-function filterCreators(
-  creators: SearchResult[],
-  q: string,
-  category?: string,
-  platform?: string,
-  region?: string
-): SearchResult[] {
-  const query = q.toLowerCase()
-  return creators.filter((c) => {
-    const matchesQuery =
-      !query ||
-      c.name.toLowerCase().includes(query) ||
-      c.handle.toLowerCase().includes(query) ||
-      c.category.includes(query) ||
-      c.recent_brands.some((b) => b.toLowerCase().includes(query)) ||
-      c.languages.some((l) => l.toLowerCase().includes(query)) ||
-      c.region.includes(query) ||
-      (c.bio?.toLowerCase().includes(query) ?? false)
-
-    const matchesCategory = !category || c.category === category
-    const matchesPlatform =
-      !platform ||
-      platform === 'both' ||
-      c.platform === platform ||
-      c.platform === 'both'
-    const matchesRegion = !region || c.region === region
-
-    return matchesQuery && matchesCategory && matchesPlatform && matchesRegion
-  })
 }
 
 const PLATFORM_COLORS: Record<string, string> = {
@@ -64,7 +34,48 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const q = params.q ?? ''
   const { category, platform, region } = params
 
-  const results = filterCreators(MOCK_CREATORS, q, category, platform, region)
+  const supabase = await createClient()
+
+  let query = supabase
+    .from('creators')
+    .select(`
+      *,
+      collaborations (
+        id,
+        brands ( name )
+      )
+    `)
+    .order('verified', { ascending: false })
+    .order('followers_instagram', { ascending: false, nullsFirst: false })
+    .limit(50)
+
+  if (q.trim()) {
+    query = query.or(
+      `name.ilike.%${q}%,handle.ilike.%${q}%,bio.ilike.%${q}%,category.ilike.%${q}%`
+    )
+  }
+  if (category) query = query.eq('category', category)
+  if (platform && platform !== 'both') {
+    query = query.or(`platform.eq.${platform},platform.eq.both`)
+  } else if (platform === 'both') {
+    query = query.eq('platform', 'both')
+  }
+  if (region) query = query.eq('region', region)
+
+  const { data: rows } = await query
+
+  const results: SearchResult[] = (rows ?? []).map((c) => {
+    const collabs = c.collaborations ?? []
+    const recentBrands = collabs
+      .map((col: { brands: { name: string } | null }) => col.brands?.name)
+      .filter(Boolean)
+      .slice(0, 5) as string[]
+    return {
+      ...c,
+      recent_brands: recentBrands,
+      collab_count: collabs.length,
+    }
+  })
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
@@ -136,7 +147,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               {/* Header row */}
               <div className="flex items-start gap-3">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white">
-                  {creator.name.charAt(0)}
+                  {creator.name?.charAt(0) ?? '?'}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
@@ -164,7 +175,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 <span className="rounded-md border border-border bg-muted px-2 py-0.5 text-[10px]">
                   {regionLabel(creator.region)}
                 </span>
-                {creator.languages.slice(0, 2).map((l) => (
+                {creator.languages?.slice(0, 2).map((l: string) => (
                   <span key={l} className="rounded-md border border-border bg-muted px-2 py-0.5 text-[10px]">
                     {l}
                   </span>
@@ -198,12 +209,18 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
               {/* Recent brands */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span>Worked with:</span>
-                  {creator.recent_brands.slice(0, 3).map((b) => (
-                    <span key={b} className="font-medium text-foreground">{b}</span>
-                  ))}
-                  {creator.recent_brands.length > 3 && (
-                    <span>+{creator.recent_brands.length - 3} more</span>
+                  {creator.recent_brands.length > 0 ? (
+                    <>
+                      <span>Worked with:</span>
+                      {creator.recent_brands.slice(0, 3).map((b) => (
+                        <span key={b} className="font-medium text-foreground">{b}</span>
+                      ))}
+                      {creator.recent_brands.length > 3 && (
+                        <span>+{creator.recent_brands.length - 3} more</span>
+                      )}
+                    </>
+                  ) : (
+                    <span>No collabs indexed yet</span>
                   )}
                 </div>
                 <span className="text-[10px] text-amber-600 group-hover:underline">

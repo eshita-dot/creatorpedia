@@ -24,10 +24,13 @@ function YtIcon() {
     </svg>
   )
 }
-import { MOCK_CREATORS, MOCK_COLLABORATIONS, formatFollowers, regionLabel, tierLabel } from '@/lib/mock-data'
+
+import { createClient } from '@/lib/supabase/server'
+import { formatFollowers, regionLabel, tierLabel } from '@/lib/mock-data'
 import { MetricsGrid } from '@/components/creator/MetricsGrid'
 import { CollabTimeline } from '@/components/creator/CollabTimeline'
 import { PaywallGate } from '@/components/creator/PaywallGate'
+import type { Creator, Collaboration, Brand } from '@/types'
 
 const FREE_COLLAB_LIMIT = 3
 
@@ -37,11 +40,39 @@ interface CreatorPageProps {
 
 export default async function CreatorPage({ params }: CreatorPageProps) {
   const { handle } = await params
-  const creator = MOCK_CREATORS.find((c) => c.handle === handle)
+  const supabase = await createClient()
 
-  if (!creator) notFound()
+  const { data: creatorRow } = await supabase
+    .from('creators')
+    .select('*')
+    .eq('handle', handle)
+    .single()
 
-  const allCollabs = MOCK_COLLABORATIONS[handle] ?? []
+  if (!creatorRow) notFound()
+
+  const { data: collabRows } = await supabase
+    .from('collaborations')
+    .select(`
+      *,
+      brands (*)
+    `)
+    .eq('creator_id', creatorRow.id)
+    .order('collab_date', { ascending: false })
+
+  const creator = creatorRow as Creator
+
+  const allCollabs: Collaboration[] = (collabRows ?? []).map((row) => ({
+    id: row.id,
+    creator_id: row.creator_id,
+    collab_date: row.collab_date,
+    source: row.source,
+    deal_type: row.deal_type,
+    evidence_url: row.evidence_url,
+    disclosure_tags: row.disclosure_tags ?? [],
+    notes: row.notes,
+    brand: row.brands as Brand,
+  }))
+
   const freeCollabs = allCollabs.slice(0, FREE_COLLAB_LIMIT)
   const hiddenCount = Math.max(0, allCollabs.length - FREE_COLLAB_LIMIT)
 
@@ -109,7 +140,7 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
 
             <span className="flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-1">
               <Languages className="size-3" />
-              {creator.languages.join(', ')}
+              {(creator.languages ?? []).join(', ')}
             </span>
 
             {creator.pricing_tier && (
@@ -123,7 +154,7 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
 
       {/* Metrics */}
       <div className="mb-8">
-        <h2 className="mb-3 text-sm font-semibold">Audience & Reach</h2>
+        <h2 className="mb-3 text-sm font-semibold">Audience &amp; Reach</h2>
         <MetricsGrid creator={creator} />
       </div>
 
@@ -134,7 +165,7 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
             Brand Collaboration History
             {allCollabs.length > 0 && (
               <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
-                {creator.collab_count} total
+                {allCollabs.length} total
               </span>
             )}
           </h2>
