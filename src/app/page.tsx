@@ -46,7 +46,7 @@ export default async function HomePage() {
           <span className="text-amber-500">Every brand deal.</span>
         </h1>
         <p className="mb-8 max-w-xl text-center text-base text-muted-foreground sm:text-lg">
-          Search 4M+ Indian influencers. See their full brand collaboration history,
+          Search Indian influencers and creators. See their full brand collaboration history,
           deal types, and estimated pricing — in seconds.
         </p>
 
