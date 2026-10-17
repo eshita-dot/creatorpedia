@@ -12,6 +12,19 @@
  * 30 days. This script should run on a cron — e.g. every 25 days via Vercel Cron.
  */
 
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+
+// Load .env.local for local runs (no-op if vars already set)
+try {
+  const envPath = resolve(process.cwd(), '.env.local')
+  const lines = readFileSync(envPath, 'utf-8').split('\n')
+  for (const line of lines) {
+    const match = line.match(/^\s*([^#][^=]*?)\s*=\s*(.*)\s*$/)
+    if (match) process.env[match[1].trim()] ??= match[2].trim()
+  }
+} catch {}
+
 import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -86,6 +99,19 @@ const INDIAN_BRANDS: Record<string, { category: string; is_d2c: boolean }> = {
   Indulekha: { category: 'Hair Care', is_d2c: false },
   // Fashion
   Myntra: { category: 'Fashion Retail', is_d2c: false },
+  'H&M': { category: 'Fast Fashion', is_d2c: false },
+  Zara: { category: 'Fast Fashion', is_d2c: false },
+  Mango: { category: 'Fashion Retail', is_d2c: false },
+  Shein: { category: 'Fast Fashion', is_d2c: false },
+  Urbanic: { category: 'D2C Fashion', is_d2c: true },
+  Snitch: { category: 'D2C Fashion', is_d2c: true },
+  'Rare Rabbit': { category: 'D2C Fashion', is_d2c: true },
+  'The Souled Store': { category: 'D2C Fashion', is_d2c: true },
+  'Vero Moda': { category: 'Fashion Retail', is_d2c: false },
+  'Only': { category: 'Fashion Retail', is_d2c: false },
+  'AND': { category: 'Fashion Retail', is_d2c: false },
+  'Global Desi': { category: 'D2C Fashion', is_d2c: true },
+  'W for Woman': { category: 'D2C Fashion', is_d2c: true },
   Bewakoof: { category: 'D2C Fashion', is_d2c: true },
   Virgio: { category: 'D2C Fashion', is_d2c: true },
   AJIO: { category: 'Fashion Retail', is_d2c: false },
@@ -156,6 +182,14 @@ const INDIAN_BRANDS: Record<string, { category: string; is_d2c: boolean }> = {
   'Tata 1mg': { category: 'Health Tech', is_d2c: false },
   '1mg': { category: 'Health Tech', is_d2c: false },
   Pharmeasy: { category: 'Health Tech', is_d2c: false },
+  // Gaming & Entertainment
+  MPL: { category: 'Gaming', is_d2c: false },
+  WinZO: { category: 'Gaming', is_d2c: false },
+  'Dream11': { category: 'Fantasy Sports', is_d2c: false },
+  'Mobile Premier League': { category: 'Gaming', is_d2c: false },
+  Rooter: { category: 'Gaming', is_d2c: false },
+  'My11Circle': { category: 'Fantasy Sports', is_d2c: false },
+  GameBet: { category: 'Gaming', is_d2c: false },
   // General / E-commerce
   Amazon: { category: 'E-commerce', is_d2c: false },
   Flipkart: { category: 'E-commerce', is_d2c: false },
@@ -243,6 +277,11 @@ const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
       'Indian fashion YouTuber OOTD haul Myntra AJIO',
       'India fashion lifestyle influencer YouTube sponsored',
     ],
+    knownHandles: [
+      'KomalPandeyOfficial', 'SejalsStyleFile', 'BeingIndianFashion',
+      'Aashna.shroff', 'Roshni_Bhatia', 'tanvii.hissaria',
+      'shiveshbhatia', 'GabrielleIlana', 'styledbyasi',
+    ],
   },
   tech: {
     queries: [
@@ -261,6 +300,16 @@ const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     knownHandles: [
       'MumbikerNikhil', 'abhiandniyu', 'TheUniqueBrotherhood',
       'NomadsWorld', 'Varun_Vagish',
+    ],
+  },
+  gaming: {
+    queries: [
+      'India gaming YouTube streamer sponsored',
+    ],
+    knownHandles: [
+      'TotalGaming093', 'TechnoGamerzOfficial', 'CarryMinati', 'BeastBoyShub',
+      'GyanGaming', 'Mythpat', 'triggeredinsaan', 'ChapatiHindustaniGamer',
+      'LokeshGamerYT', 'RakaZoneGaming',
     ],
   },
   entertainment: {
