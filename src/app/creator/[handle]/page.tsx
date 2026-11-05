@@ -95,7 +95,7 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
 
       {/* Profile header */}
       <div className="mb-6 flex items-start gap-4">
-        <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-xl font-bold text-white shadow-sm">
+        <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-xl font-bold text-white shadow-sm">
           {creator.name.charAt(0)}
         </div>
 
@@ -144,7 +144,7 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
             </span>
 
             {creator.pricing_tier && (
-              <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 font-medium text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-400">
+              <span className="rounded-md border border-brand-200 bg-brand-50 px-2 py-1 font-medium text-brand-700 dark:border-brand-800/40 dark:bg-brand-950/30 dark:text-brand-400">
                 {tierLabel(creator.pricing_tier)}
               </span>
             )}

@@ -34,16 +34,16 @@ export default async function HomePage() {
     <div className="flex flex-col">
       {/* Hero */}
       <section className="relative flex flex-col items-center justify-center px-4 pt-20 pb-16 sm:pt-28 sm:pb-20">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-amber-50/60 to-background dark:from-amber-950/20" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-brand-50/60 to-background" />
 
-        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/50 dark:text-amber-400">
+        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
           <Zap className="size-3" />
           India&apos;s first influencer intelligence database
         </div>
 
         <h1 className="mb-3 text-center text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
           Find any creator.{' '}
-          <span className="text-amber-500">Every brand deal.</span>
+          <span className="text-brand-600">Every brand deal.</span>
         </h1>
         <p className="mb-8 max-w-xl text-center text-base text-muted-foreground sm:text-lg">
           Search Indian influencers and creators. See their full brand collaboration history,
@@ -52,7 +52,7 @@ export default async function HomePage() {
 
         {/* Search form */}
         <form action={handleSearch} className="w-full max-w-2xl">
-          <div className="flex gap-2 rounded-xl border border-border bg-background p-1.5 shadow-sm ring-1 ring-amber-500/10 focus-within:ring-amber-500/30 transition-all">
+          <div className="flex gap-2 rounded-xl border border-border bg-background p-1.5 shadow-sm ring-1 ring-brand-500/10 focus-within:ring-brand-500/30 transition-all">
             <Search className="ml-2 mt-2.5 size-4 shrink-0 text-muted-foreground" />
             <input
               name="q"
@@ -63,7 +63,7 @@ export default async function HomePage() {
             />
             <button
               type="submit"
-              className="shrink-0 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
+              className="shrink-0 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
             >
               Search
             </button>
@@ -109,7 +109,7 @@ export default async function HomePage() {
             <a
               key={q}
               href={`/search?q=${encodeURIComponent(q)}`}
-              className="rounded-full border border-border px-3 py-1 text-muted-foreground hover:border-amber-300 hover:text-amber-600 transition-colors"
+              className="rounded-full border border-border px-3 py-1 text-muted-foreground hover:border-brand-300 hover:text-brand-600 transition-colors"
             >
               {q}
             </a>
@@ -126,7 +126,7 @@ export default async function HomePage() {
             { label: 'Indian Brands in DB', value: (brandCount ?? 0).toLocaleString('en-IN') },
           ].map((s) => (
             <div key={s.label} className="flex flex-col items-center py-5 px-4">
-              <span className="text-2xl font-bold text-amber-500">{s.value}</span>
+              <span className="text-2xl font-bold text-brand-600">{s.value}</span>
               <span className="mt-0.5 text-xs text-muted-foreground">{s.label}</span>
             </div>
           ))}
@@ -155,7 +155,7 @@ export default async function HomePage() {
             },
           ].map((f) => (
             <div key={f.title} className="rounded-xl border border-border p-5">
-              <f.icon className="mb-3 size-5 text-amber-500" />
+              <f.icon className="mb-3 size-5 text-brand-600" />
               <h3 className="mb-1.5 text-sm font-semibold">{f.title}</h3>
               <p className="text-xs leading-relaxed text-muted-foreground">{f.body}</p>
             </div>

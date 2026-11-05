@@ -9,7 +9,7 @@ interface PaywallGateProps {
 
 export function PaywallGate({ hiddenCount, creatorName }: PaywallGateProps) {
   return (
-    <div className="relative mt-2 overflow-hidden rounded-xl border border-amber-200 bg-gradient-to-b from-background to-amber-50/30 dark:border-amber-800/40 dark:to-amber-950/20">
+    <div className="relative mt-2 overflow-hidden rounded-xl border border-brand-200 bg-gradient-to-b from-background to-brand-50/30 dark:border-brand-800/40 dark:to-brand-950/20">
       {/* Blurred preview rows */}
       <div className="select-none space-y-2 p-3">
         {Array.from({ length: Math.min(hiddenCount, 3) }).map((_, i) => (
@@ -28,7 +28,7 @@ export function PaywallGate({ hiddenCount, creatorName }: PaywallGateProps) {
 
       {/* Overlay CTA */}
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/70 backdrop-blur-[2px]">
-        <Lock className="mb-2 size-5 text-amber-500" />
+        <Lock className="mb-2 size-5 text-brand-600" />
         <p className="mb-0.5 text-sm font-semibold">
           {hiddenCount} more collab{hiddenCount !== 1 ? 's' : ''} hidden
         </p>
@@ -37,7 +37,7 @@ export function PaywallGate({ hiddenCount, creatorName }: PaywallGateProps) {
         </p>
         <button
           onClick={() => alert('Razorpay integration coming soon — ₹499 unlock')}
-          className="rounded-lg bg-amber-500 px-5 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors shadow-sm"
+          className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors shadow-sm"
         >
           Unlock Full Profile — ₹499
         </button>

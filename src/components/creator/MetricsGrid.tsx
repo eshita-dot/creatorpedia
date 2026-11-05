@@ -41,7 +41,7 @@ export function MetricsGrid({ creator }: MetricsGridProps) {
           key={m.label}
           className="flex flex-col gap-1 rounded-lg border border-border bg-muted/30 p-3"
         >
-          <m.icon className="size-4 text-amber-500" />
+          <m.icon className="size-4 text-brand-600" />
           <span className="text-lg font-bold">{m.value}</span>
           <span className="text-[11px] text-muted-foreground">{m.label}</span>
         </div>

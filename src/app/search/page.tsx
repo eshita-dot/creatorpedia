@@ -25,8 +25,8 @@ const TIER_COLORS: Record<string, string> = {
   nano: 'bg-gray-100 text-gray-600',
   micro: 'bg-blue-100 text-blue-700',
   mid: 'bg-green-100 text-green-700',
-  macro: 'bg-amber-100 text-amber-700',
-  mega: 'bg-orange-100 text-orange-700',
+  macro: 'bg-brand-100 text-brand-700',
+  mega: 'bg-brand-200 text-brand-800',
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
@@ -82,7 +82,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       {/* Search bar (inline) */}
       <form method="GET" action="/search" className="mb-6">
         <div className="flex gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 focus-within:ring-1 focus-within:ring-amber-500/40">
+          <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 focus-within:ring-1 focus-within:ring-brand-500/40">
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <input
               name="q"
@@ -96,7 +96,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </div>
           <button
             type="submit"
-            className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
           >
             Search
           </button>
@@ -142,11 +142,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             <Link
               key={creator.id}
               href={`/creator/${creator.handle}`}
-              className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-4 hover:border-amber-300 hover:shadow-sm transition-all"
+              className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-4 hover:border-brand-300 hover:shadow-sm transition-all"
             >
               {/* Header row */}
               <div className="flex items-start gap-3">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-sm font-bold text-white">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white">
                   {creator.name?.charAt(0) ?? '?'}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -223,7 +223,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <span>No collabs indexed yet</span>
                   )}
                 </div>
-                <span className="text-[10px] text-amber-600 group-hover:underline">
+                <span className="text-[10px] text-brand-600 group-hover:underline">
                   Deep Scan →
                 </span>
               </div>
@@ -237,7 +237,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <p className="mt-1 text-xs text-muted-foreground">
             Try a different search term or remove filters
           </p>
-          <Link href="/" className="mt-4 text-xs text-amber-600 hover:underline">
+          <Link href="/" className="mt-4 text-xs text-brand-600 hover:underline">
             Back to home
           </Link>
         </div>
