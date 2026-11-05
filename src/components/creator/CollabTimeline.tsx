@@ -41,7 +41,7 @@ export function CollabTimeline({ collabs }: CollabTimelineProps) {
       {collabs.map((c) => (
         <div
           key={c.id}
-          className="flex items-start gap-3 rounded-lg border border-border bg-card p-3 hover:border-amber-200 transition-colors"
+          className="flex items-start gap-3 rounded-lg border border-border bg-card p-3 hover:border-brand-200 transition-colors"
         >
           {/* Brand initial */}
           <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-slate-100 to-slate-200 text-xs font-bold text-slate-600 dark:from-slate-800 dark:to-slate-700 dark:text-slate-300">
@@ -86,7 +86,7 @@ export function CollabTimeline({ collabs }: CollabTimelineProps) {
               href={c.evidence_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 text-muted-foreground hover:text-amber-500 transition-colors"
+              className="shrink-0 text-muted-foreground hover:text-brand-600 transition-colors"
             >
               <ExternalLink className="size-3.5" />
             </a>
