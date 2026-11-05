@@ -24,7 +24,7 @@ export function Navbar() {
             alt="Creatorpedia — Influencer Intelligence"
             width={180}
             height={60}
-            className="h-8 w-auto object-contain"
+            className="h-10 w-auto object-contain"
             priority
           />
         </Link>
