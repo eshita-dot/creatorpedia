@@ -5,7 +5,7 @@ export default function OnboardPage() {
     <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
       {/* Header */}
       <div className="mb-10 text-center">
-        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/50 dark:text-amber-400">
+        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 dark:border-brand-800/50 dark:bg-brand-950/50 dark:text-brand-400">
           <Zap className="size-3" />
           For Creators
         </div>
@@ -43,7 +43,7 @@ export default function OnboardPage() {
           },
         ].map((b) => (
           <div key={b.title} className="rounded-xl border border-border p-4">
-            <b.icon className="mb-2 size-5 text-amber-500" />
+            <b.icon className="mb-2 size-5 text-brand-600" />
             <h3 className="mb-1 text-sm font-semibold">{b.title}</h3>
             <p className="text-xs leading-relaxed text-muted-foreground">{b.body}</p>
           </div>
@@ -60,7 +60,7 @@ export default function OnboardPage() {
             <input
               type="text"
               placeholder="Riya Sharma"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand-500/40"
             />
           </div>
 
@@ -69,7 +69,7 @@ export default function OnboardPage() {
             <input
               type="email"
               placeholder="you@example.com"
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand-500/40"
             />
           </div>
 
@@ -79,7 +79,7 @@ export default function OnboardPage() {
               <input
                 type="text"
                 placeholder="@yourhandle"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand-500/40"
               />
             </div>
             <div>
@@ -87,14 +87,14 @@ export default function OnboardPage() {
               <input
                 type="text"
                 placeholder="youtube.com/c/yourchannel"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-brand-500/40"
               />
             </div>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-medium">Primary niche</label>
-            <select className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/40">
+            <select className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500/40">
               <option value="">Select a category</option>
               {['Beauty', 'Fashion', 'Finance', 'Food', 'Fitness', 'Tech', 'Travel', 'Entertainment', 'Parenting', 'Gaming', 'Lifestyle'].map((c) => (
                 <option key={c}>{c}</option>
@@ -102,7 +102,7 @@ export default function OnboardPage() {
             </select>
           </div>
 
-          <div className="rounded-lg border border-amber-200/50 bg-amber-50/50 p-3 text-xs text-amber-700 dark:border-amber-800/30 dark:bg-amber-950/30 dark:text-amber-400">
+          <div className="rounded-lg border border-brand-200/50 bg-brand-50/50 p-3 text-xs text-brand-700 dark:border-brand-800/30 dark:bg-brand-950/30 dark:text-brand-400">
             After submitting, we&apos;ll send you an OAuth link to connect your Instagram Business
             or Creator account. This lets us display verified metrics on your public profile.
             You can revoke access any time.
@@ -110,7 +110,7 @@ export default function OnboardPage() {
 
           <button
             type="submit"
-            className="w-full rounded-lg bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 transition-colors"
+            className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
           >
             Request Early Access
           </button>
