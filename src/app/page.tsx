@@ -1,26 +1,12 @@
 export const dynamic = 'force-dynamic'
 
-import { redirect } from 'next/navigation'
 import { Search, Zap, Shield, TrendingUp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 const CATEGORIES = ['Beauty', 'Fashion', 'Finance', 'Food', 'Fitness', 'Tech', 'Travel', 'Gaming']
 const PLATFORMS = ['Instagram', 'YouTube', 'Both']
-const REGIONS = ['Pan-India', 'North India', 'South India', 'West India', 'East India']
-
-async function handleSearch(formData: FormData) {
-  'use server'
-  const q = formData.get('q') as string
-  if (!q?.trim()) return
-  const params = new URLSearchParams({ q: q.trim() })
-  const category = formData.get('category') as string
-  const platform = formData.get('platform') as string
-  const region = formData.get('region') as string
-  if (category) params.set('category', category.toLowerCase())
-  if (platform) params.set('platform', platform.toLowerCase())
-  if (region) params.set('region', region.toLowerCase().replace(' ', '-'))
-  redirect(`/search?${params.toString()}`)
-}
+const REGIONS = ['pan-india', 'north-india', 'south-india', 'west-india', 'east-india']
+const REGION_LABELS = ['Pan-India', 'North India', 'South India', 'West India', 'East India']
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -51,7 +37,7 @@ export default async function HomePage() {
         </p>
 
         {/* Search form */}
-        <form action={handleSearch} className="w-full max-w-2xl">
+        <form method="GET" action="/search" className="w-full max-w-2xl">
           <div className="flex gap-2 rounded-xl border border-border bg-background p-1.5 shadow-sm ring-1 ring-brand-500/10 focus-within:ring-brand-500/30 transition-all">
             <Search className="ml-2 mt-2.5 size-4 shrink-0 text-muted-foreground" />
             <input
@@ -95,8 +81,8 @@ export default async function HomePage() {
               className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none"
             >
               <option value="">All Regions</option>
-              {REGIONS.map((r) => (
-                <option key={r} value={r.toLowerCase().replace(' ', '-')}>{r}</option>
+              {REGIONS.map((r, i) => (
+                <option key={r} value={r}>{REGION_LABELS[i]}</option>
               ))}
             </select>
           </div>

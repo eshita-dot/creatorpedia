@@ -62,7 +62,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
   if (region) query = query.eq('region', region)
 
-  const { data: rows } = await query
+  const { data: rows, error: searchError } = await query
+  if (searchError) console.error('[search] Supabase error:', searchError)
 
   const results: SearchResult[] = (rows ?? []).map((c) => {
     const collabs = c.collaborations ?? []
