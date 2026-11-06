@@ -4,9 +4,6 @@ import { Search, Zap, Shield, TrendingUp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 const CATEGORIES = ['Beauty', 'Fashion', 'Finance', 'Food', 'Fitness', 'Tech', 'Travel', 'Gaming']
-const PLATFORMS = ['Instagram', 'YouTube', 'Both']
-const REGIONS = ['pan-india', 'north-india', 'south-india', 'west-india', 'east-india']
-const REGION_LABELS = ['Pan-India', 'North India', 'South India', 'West India', 'East India']
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -65,24 +62,6 @@ export default async function HomePage() {
               <option value="">All Categories</option>
               {CATEGORIES.map((c) => (
                 <option key={c} value={c.toLowerCase()}>{c}</option>
-              ))}
-            </select>
-            <select
-              name="platform"
-              className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none"
-            >
-              <option value="">All Platforms</option>
-              {PLATFORMS.map((p) => (
-                <option key={p} value={p.toLowerCase()}>{p}</option>
-              ))}
-            </select>
-            <select
-              name="region"
-              className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none"
-            >
-              <option value="">All Regions</option>
-              {REGIONS.map((r, i) => (
-                <option key={r} value={r}>{REGION_LABELS[i]}</option>
               ))}
             </select>
           </div>
