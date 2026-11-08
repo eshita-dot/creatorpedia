@@ -559,16 +559,19 @@ async function insertCollab(
   disclosureTags: string[],
   dealType: ReturnType<typeof inferDealType>
 ) {
-  await supabase.from('collaborations').insert({
-    creator_id: creatorId,
-    brand_id: brandId,
-    collab_date: video.publishedAt.substring(0, 10),
-    source: 'youtube_api',
-    deal_type: dealType,
-    evidence_url: `https://www.youtube.com/watch?v=${video.videoId}`,
-    disclosure_tags: disclosureTags,
-    notes: video.title.substring(0, 200),
-  })
+  await supabase.from('collaborations').upsert(
+    {
+      creator_id: creatorId,
+      brand_id: brandId,
+      collab_date: video.publishedAt.substring(0, 10),
+      source: 'youtube_api',
+      deal_type: dealType,
+      evidence_url: `https://www.youtube.com/watch?v=${video.videoId}`,
+      disclosure_tags: disclosureTags,
+      notes: video.title.substring(0, 200),
+    },
+    { onConflict: 'creator_id,brand_id,collab_date', ignoreDuplicates: true }
+  )
 }
 
 // ── Main ingestion loop ───────────────────────────────────────────────────────
@@ -588,18 +591,23 @@ async function ingest(category: string, maxChannels = 50) {
     if (!creatorId) continue
 
     const videos = await fetchRecentVideos(channel.channelId, 30)
-    const disclosedVideos = videos.filter((v) =>
-      hasDisclosure(v.title + ' ' + v.description)
-    )
 
-    console.log(`     ${videos.length} videos fetched, ${disclosedVideos.length} with disclosures`)
-
-    for (const video of disclosedVideos) {
+    // Collect brand mentions from ALL videos — disclosed or not.
+    // Disclosed videos get the proper deal_type; undisclosed get 'unknown'.
+    const videosWithBrands: Array<{ video: YouTubeVideo; brands: ReturnType<typeof extractBrandMentions>; tags: string[]; dealType: ReturnType<typeof inferDealType> }> = []
+    for (const video of videos) {
       const fullText = video.title + ' ' + video.description
-      const tags = extractDisclosureTags(fullText)
       const brands = extractBrandMentions(fullText)
+      if (brands.length === 0) continue
+      const tags = extractDisclosureTags(fullText)
       const dealType = inferDealType(fullText)
+      videosWithBrands.push({ video, brands, tags, dealType })
+    }
 
+    const disclosedCount = videos.filter(v => hasDisclosure(v.title + ' ' + v.description)).length
+    console.log(`     ${videos.length} videos fetched, ${disclosedCount} disclosed, ${videosWithBrands.length} with brand mentions`)
+
+    for (const { video, brands, tags, dealType } of videosWithBrands) {
       for (const brand of brands) {
         const brandId = await upsertBrand(brand)
         if (!brandId) continue

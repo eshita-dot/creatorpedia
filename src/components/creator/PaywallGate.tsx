@@ -1,13 +1,87 @@
 'use client'
 
-import { Lock } from 'lucide-react'
+import { useState } from 'react'
+import { Lock, Loader2 } from 'lucide-react'
 
 interface PaywallGateProps {
   hiddenCount: number
   creatorName: string
+  creatorId: string
 }
 
-export function PaywallGate({ hiddenCount, creatorName }: PaywallGateProps) {
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Razorpay: new (options: Record<string, any>) => { open(): void }
+  }
+}
+
+function loadRazorpayScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window !== 'undefined' && window.Razorpay) {
+      resolve()
+      return
+    }
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.onload = () => resolve()
+    script.onerror = reject
+    document.body.appendChild(script)
+  })
+}
+
+export function PaywallGate({ hiddenCount, creatorName, creatorId }: PaywallGateProps) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleUnlock() {
+    setLoading(true)
+    setError(null)
+    try {
+      await loadRazorpayScript()
+
+      const orderRes = await fetch('/api/razorpay/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creatorId }),
+      })
+      if (!orderRes.ok) throw new Error('Failed to create order')
+      const { orderId, amount, currency, keyId } = await orderRes.json()
+
+      const rzp = new window.Razorpay({
+        key: keyId,
+        amount,
+        currency,
+        order_id: orderId,
+        name: 'The Creatorpedia',
+        description: `Unlock ${creatorName}'s full profile`,
+        handler: async (response: {
+          razorpay_order_id: string
+          razorpay_payment_id: string
+          razorpay_signature: string
+        }) => {
+          const verifyRes = await fetch('/api/razorpay/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...response, creatorId }),
+          })
+          if (verifyRes.ok) {
+            window.location.reload()
+          } else {
+            setError('Payment verification failed. Contact support.')
+            setLoading(false)
+          }
+        },
+        theme: { color: '#7c3aed' },
+        modal: { ondismiss: () => setLoading(false) },
+      })
+      rzp.open()
+    } catch {
+      setError('Something went wrong. Please try again.')
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="relative mt-2 overflow-hidden rounded-xl border border-brand-200 bg-gradient-to-b from-background to-brand-50/30 dark:border-brand-800/40 dark:to-brand-950/20">
       {/* Blurred preview rows */}
@@ -35,10 +109,13 @@ export function PaywallGate({ hiddenCount, creatorName }: PaywallGateProps) {
         <p className="mb-4 text-xs text-muted-foreground">
           Unlock {creatorName}&apos;s full brand history + pricing tier
         </p>
+        {error && <p className="mb-2 text-xs text-red-500">{error}</p>}
         <button
-          onClick={() => alert('Razorpay integration coming soon — ₹499 unlock')}
-          className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors shadow-sm"
+          onClick={handleUnlock}
+          disabled={loading}
+          className="flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-70 transition-colors shadow-sm"
         >
+          {loading && <Loader2 className="size-3.5 animate-spin" />}
           Unlock Full Profile — ₹499
         </button>
         <p className="mt-2 text-[10px] text-muted-foreground">One-time payment · Instant access</p>

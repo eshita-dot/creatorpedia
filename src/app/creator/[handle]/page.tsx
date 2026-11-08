@@ -25,6 +25,7 @@ function YtIcon() {
   )
 }
 
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { formatFollowers, regionLabel, tierLabel } from '@/lib/mock-data'
 import { MetricsGrid } from '@/components/creator/MetricsGrid'
@@ -73,8 +74,11 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
     brand: row.brands as Brand,
   }))
 
-  const freeCollabs = allCollabs.slice(0, FREE_COLLAB_LIMIT)
-  const hiddenCount = Math.max(0, allCollabs.length - FREE_COLLAB_LIMIT)
+  const cookieStore = await cookies()
+  const isUnlocked = cookieStore.get(`unlocked_${creator.id}`)?.value === '1'
+
+  const freeCollabs = isUnlocked ? allCollabs : allCollabs.slice(0, FREE_COLLAB_LIMIT)
+  const hiddenCount = isUnlocked ? 0 : Math.max(0, allCollabs.length - FREE_COLLAB_LIMIT)
 
   const PLATFORM_LABEL: Record<string, string> = {
     instagram: 'Instagram',
@@ -188,7 +192,11 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
             <CollabTimeline collabs={freeCollabs} />
 
             {hiddenCount > 0 && (
-              <PaywallGate hiddenCount={hiddenCount} creatorName={creator.name} />
+              <PaywallGate
+                hiddenCount={hiddenCount}
+                creatorName={creator.name}
+                creatorId={creator.id}
+              />
             )}
           </>
         )}
