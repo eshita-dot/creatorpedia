@@ -76,7 +76,8 @@ export function PaywallGate({ hiddenCount, creatorName, creatorId }: PaywallGate
         modal: { ondismiss: () => setLoading(false) },
       })
       rzp.open()
-    } catch {
+    } catch (e) {
+      console.error('[PaywallGate] unlock error:', e)
       setError('Something went wrong. Please try again.')
       setLoading(false)
     }
