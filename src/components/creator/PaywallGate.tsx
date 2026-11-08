@@ -40,11 +40,20 @@ export function PaywallGate({ hiddenCount, creatorName, creatorId }: PaywallGate
     try {
       await loadRazorpayScript()
 
-      const orderRes = await fetch('/api/razorpay/create-order', {
+      // Retry once — first call may fail on cold Netlify function start
+      let orderRes = await fetch('/api/razorpay/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ creatorId }),
       })
+      if (!orderRes.ok) {
+        await new Promise((r) => setTimeout(r, 1500))
+        orderRes = await fetch('/api/razorpay/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ creatorId }),
+        })
+      }
       if (!orderRes.ok) throw new Error('Failed to create order')
       const { orderId, amount, currency, keyId } = await orderRes.json()
 

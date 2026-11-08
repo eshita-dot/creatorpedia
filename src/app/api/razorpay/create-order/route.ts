@@ -7,19 +7,25 @@ const razorpay = new Razorpay({
 })
 
 export async function POST(req: NextRequest) {
-  const { creatorId } = await req.json()
+  try {
+    const { creatorId } = await req.json()
 
-  const order = await razorpay.orders.create({
-    amount: 49900, // ₹499 in paise
-    currency: 'INR',
-    receipt: `unlock_${creatorId}_${Date.now()}`,
-    notes: { creatorId },
-  })
+    const order = await razorpay.orders.create({
+      amount: 49900, // ₹499 in paise
+      currency: 'INR',
+      receipt: `unlock_${creatorId}_${Date.now()}`.substring(0, 40),
+      notes: { creatorId },
+    })
 
-  return NextResponse.json({
-    orderId: order.id,
-    amount: order.amount,
-    currency: order.currency,
-    keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-  })
+    return NextResponse.json({
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[create-order] error:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 }
