@@ -83,7 +83,15 @@ export interface SearchFilters {
   category?: Category
   platform?: Platform
   region?: Region
+  tier?: PricingTier
   language?: string
+  min_followers?: number
+  max_followers?: number
+  min_er?: number
+  available?: boolean
+  verified?: boolean
+  sort?: 'followers' | 'engagement' | 'collabs' | 'recent'
+  brand?: string
 }
 
 export interface SearchResult extends Creator {
