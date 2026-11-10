@@ -34,6 +34,19 @@ export interface Creator {
   pricing_tier?: PricingTier
   created_at: string
   updated_at: string
+  // Claim fields
+  claim_status?: 'unclaimed' | 'claimed'
+  claimed_user_id?: string
+  contact_email?: string
+  instagram_handle?: string
+  rate_reel_min?: number
+  rate_reel_max?: number
+  rate_youtube_min?: number
+  rate_youtube_max?: number
+  rate_story_min?: number
+  rate_story_max?: number
+  available_for_collabs?: boolean
+  preferred_deal_types?: string[]
 }
 
 export interface Brand {

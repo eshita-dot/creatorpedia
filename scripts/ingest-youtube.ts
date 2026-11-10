@@ -242,6 +242,12 @@ const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
       'Indian makeup tutorial skincare review sponsored',
     ],
     language: 'hi',
+    knownHandles: [
+      'malvikasitlaniofficial', 'shreyajain28', 'debasreebanerjee',
+      'corallista', 'nishagandhi', 'anishashroff', 'DebThetalkingbeauty',
+      'PoojaBeautyOfficial', 'GauaharKhan', 'MayasTipsandTricks',
+      'makeupandartistry', 'BeautybyPriyanka',
+    ],
   },
   finance: {
     queries: [
@@ -251,25 +257,33 @@ const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     knownHandles: [
       'CArachanaranade', 'akshat_shrivastava8', 'PranjalKamraFinancials',
       'labourlawadvisor', 'warikoo', 'nikhilkamathofficial',
-      'FinancialEducationbyCA', 'InvestmentMonk',
+      'FinancialEducationbyCA', 'InvestmentMonk', 'assetyogi',
+      'CAsumitsharmaofficialpage', 'SaurabhBanthia', 'HealthyRichyou',
     ],
   },
   food: {
     queries: [
       'Indian food blogger recipe YouTube',
+      'Indian street food vlog YouTube',
     ],
     knownHandles: [
       'SanjeevKapoorKhazana', 'RanveerBrar', 'YourFoodLab',
       'FoodPharmer', 'nikyoofood', 'KabitasKitchen',
+      'hebbarskitchen', 'NishaMadhulikaRecipes', 'MadhurasRecipe',
+      'CookingShooking', 'SmokyRibs', 'IndianFoodRocks',
+      'VahChef', 'TarlaDalal',
     ],
   },
   fitness: {
     queries: [
       'India fitness workout YouTube gym',
+      'India yoga workout YouTube',
     ],
     knownHandles: [
       'FitTuber', 'GuruMannFitness', 'YatinderSinghFitness',
       'nikhilfit', 'cultfit', 'GrandmasterShifuji',
+      'AbhinavMahajan', 'GargiShah', 'SurvivingWithSinha',
+      'BeerBiceps', 'SahilKhan', 'theindianfitnessguru',
     ],
   },
   fashion: {
@@ -281,6 +295,9 @@ const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
       'KomalPandeyOfficial', 'SejalsStyleFile', 'BeingIndianFashion',
       'Aashna.shroff', 'Roshni_Bhatia', 'tanvii.hissaria',
       'shiveshbhatia', 'GabrielleIlana', 'styledbyasi',
+      'kritikakamma', 'DollyOfficial', 'kushakapilaofficial',
+      'santoshishetty', 'niharikalalkani', 'mawraofficial',
+      'TheSocialMediaGuru', 'diipakhosla',
     ],
   },
   tech: {
@@ -291,31 +308,46 @@ const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
     knownHandles: [
       'TechBurner', 'trakintech', 'geekyranjit', 'TechnicalGuruji',
       'MrPhoneOfficial', 'beebomco', 'GadgetsToUse', 'techbar',
+      'technicaldost', 'c4etech', 'AbhishekMavi', 'SharmajiTechnical',
+      'techno_ruhez', 'PranmasterTech', 'AshishKumarTech',
     ],
   },
   travel: {
     queries: [
       'Indian travel vlog YouTube',
+      'India solo travel backpacking vlog',
     ],
     knownHandles: [
       'MumbikerNikhil', 'abhiandniyu', 'TheUniqueBrotherhood',
-      'NomadsWorld', 'Varun_Vagish',
+      'NomadsWorld', 'Varun_Vagish', 'DesiGirlAbroad',
+      'GabbarSinghTech', 'SoloBoyTraveller', 'GhumakkadLapakos',
+      'TravelwithJo', 'wanderbees', 'BackpackerBen',
     ],
   },
   gaming: {
     queries: [
       'India gaming YouTube streamer sponsored',
+      'India BGMI Free Fire gaming YouTube',
     ],
     knownHandles: [
       'TotalGaming093', 'TechnoGamerzOfficial', 'CarryMinati', 'BeastBoyShub',
       'GyanGaming', 'Mythpat', 'triggeredinsaan', 'ChapatiHindustaniGamer',
-      'LokeshGamerYT', 'RakaZoneGaming',
+      'LokeshGamerYT', 'RakaZoneGaming', 'MortaLOP', 'DynamoGaming',
+      'sc0utOP', 'PayalGamingOfficial', 'GodLike_Esports',
+      'NischayMalhan', 'Jonty_gaming', 'AshishChanchlani2',
     ],
   },
   entertainment: {
     queries: [
       'Indian entertainment YouTube creator',
       'India comedy vlog YouTube sponsored',
+    ],
+    knownHandles: [
+      'ashishchanchlaniofficial', 'BBKiVinesOfficial', 'Round2hell',
+      'MostlySane', 'filtercopy', 'scoopcoop', 'TheViralFever',
+      'AIBofficial', 'JustSajidOfficial', 'BhuvanBam',
+      'DollyOfficial', 'kushakapilaofficial', 'RajaSingh',
+      'theDeshiMan', 'NikhilVijay',
     ],
   },
 }

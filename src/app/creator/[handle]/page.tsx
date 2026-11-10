@@ -212,6 +212,22 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
         </Link>
         .
       </div>
+
+      {/* Claim CTA — only shown to unclaimed profiles */}
+      {(!creator.claim_status || creator.claim_status === 'unclaimed') && (
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-brand-200/60 bg-brand-50/50 px-4 py-3 dark:border-brand-800/30 dark:bg-brand-950/20">
+          <div>
+            <p className="text-xs font-semibold text-brand-700 dark:text-brand-400">Is this your profile?</p>
+            <p className="text-xs text-muted-foreground">Claim it to add your rate card, Instagram, and get verified.</p>
+          </div>
+          <Link
+            href={`/claim/${creator.handle}`}
+            className="ml-4 shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 transition-colors"
+          >
+            Claim profile →
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
