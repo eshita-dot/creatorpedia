@@ -100,8 +100,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   if (language)     query = query.contains('languages', [language])
   if (available)    query = query.eq('available_for_collabs', true)
   if (verifiedOnly) query = query.eq('verified', true)
-  if (minFollowers) query = query.gte('followers_instagram', Number(minFollowers))
-  if (maxFollowers) query = query.lte('followers_instagram', Number(maxFollowers))
+  if (minFollowers) query = query.or(`followers_instagram.gte.${minFollowers},followers_youtube.gte.${minFollowers}`)
+  if (maxFollowers) query = query.or(`followers_instagram.lte.${maxFollowers},followers_youtube.lte.${maxFollowers}`)
   if (minEr)        query = query.gte('avg_engagement_rate', Number(minEr))
 
   if (platform && platform !== 'both') {
@@ -285,8 +285,11 @@ function renderPage(
                   {creator.recent_brands.length > 0 ? (
                     <>
                       <span>Worked with:</span>
-                      {creator.recent_brands.slice(0, 3).map((b) => (
-                        <span key={b} className="font-medium text-foreground">{b}</span>
+                      {creator.recent_brands.slice(0, 3).map((b, i) => (
+                        <span key={`${b}-${i}`} className="inline-flex items-center gap-1">
+                          {i > 0 && <span className="text-border">·</span>}
+                          <span className="font-medium text-foreground">{b}</span>
+                        </span>
                       ))}
                       {creator.recent_brands.length > 3 && (
                         <span>+{creator.recent_brands.length - 3} more</span>

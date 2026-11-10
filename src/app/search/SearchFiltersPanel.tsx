@@ -273,7 +273,7 @@ export function SearchFiltersPanel(props: FilterProps) {
           {/* Row 3: Followers range + Min ER */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="mb-1.5 text-xs font-medium">Followers (Instagram)</p>
+              <p className="mb-1.5 text-xs font-medium">Subscribers / Followers</p>
               <div className="flex items-center gap-2">
                 <input
                   type="number"

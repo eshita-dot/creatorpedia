@@ -231,8 +231,10 @@ interface YouTubeVideo {
 
 interface CategoryConfig {
   queries: string[]
-  language?: string  // omit to search all languages
-  knownHandles?: string[]  // seed known big creators by handle
+  language?: string        // YouTube API relevanceLanguage param
+  knownHandles?: string[]
+  region?: string          // default region for creators in this config
+  languages?: string[]     // content languages for creators in this config
 }
 
 const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
@@ -538,7 +540,11 @@ function inferDealType(text: string): 'paid' | 'barter' | 'gifted' | 'unknown' {
 
 // ── Supabase upsert helpers ───────────────────────────────────────────────────
 
-async function upsertCreator(channel: YouTubeChannel, category: string) {
+async function upsertCreator(
+  channel: YouTubeChannel,
+  category: string,
+  options?: { region?: string; languages?: string[] }
+) {
   const subscriberCount = parseInt(channel.subscriberCount || '0', 10)
   const tier =
     subscriberCount >= 1_000_000 ? 'mega' :
@@ -557,8 +563,8 @@ async function upsertCreator(channel: YouTubeChannel, category: string) {
         name: channel.title,
         bio: channel.description.substring(0, 500),
         category,
-        region: 'pan-india',
-        languages: ['Hindi', 'English'],
+        region: options?.region ?? 'pan-india',
+        languages: options?.languages ?? ['Hindi', 'English'],
         followers_youtube: subscriberCount,
         pricing_tier: tier,
         updated_at: new Date().toISOString(),
@@ -611,6 +617,7 @@ async function insertCollab(
 async function ingest(category: string, maxChannels = 50) {
   console.log(`\n[ingest] Starting — category: ${category}, max channels: ${maxChannels}`)
 
+  const config = CATEGORY_CONFIG[category]
   const channels = await searchIndianChannels(category, maxChannels)
   console.log(`[ingest] Found ${channels.length} channels`)
 
@@ -619,7 +626,10 @@ async function ingest(category: string, maxChannels = 50) {
   for (const channel of channels) {
     console.log(`  → ${channel.title} (${channel.subscriberCount} subs)`)
 
-    const creatorId = await upsertCreator(channel, category)
+    const creatorId = await upsertCreator(channel, category, {
+      region: config?.region,
+      languages: config?.languages,
+    })
     if (!creatorId) continue
 
     const videos = await fetchRecentVideos(channel.channelId, 30)
