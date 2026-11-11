@@ -235,6 +235,7 @@ interface CategoryConfig {
   knownHandles?: string[]
   region?: string          // default region for creators in this config
   languages?: string[]     // content languages for creators in this config
+  dbCategory?: string      // DB category value when config key differs (e.g. tamil-food → food)
 }
 
 const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
@@ -350,6 +351,238 @@ const CATEGORY_CONFIG: Record<string, CategoryConfig> = {
       'AIBofficial', 'JustSajidOfficial', 'BhuvanBam',
       'DollyOfficial', 'kushakapilaofficial', 'RajaSingh',
       'theDeshiMan', 'NikhilVijay',
+    ],
+  },
+  lifestyle: {
+    queries: [
+      'Indian lifestyle vlogger YouTube daily vlog sponsored',
+      'India day in life vlog YouTube influencer',
+      'Indian lifestyle influencer morning routine haul',
+    ],
+    knownHandles: [
+      'sejalkumar1', 'prajaktatayade', 'niharikaNM', 'UornikFC',
+      'ShreyaGhoshal', 'gauaharkhan', 'RubinaDilaik', 'JasminBhasin',
+      'KarishmaK', 'shehnaazgill',
+    ],
+  },
+  parenting: {
+    queries: [
+      'Indian parenting YouTube mom vlog baby',
+      'India parenting tips baby care YouTube Hindi',
+      'Indian family vlog kids parenting YouTube',
+    ],
+    knownHandles: [
+      'SuperMomIndia', 'MomComIndia', 'mummasworld',
+      'TheIndianMom', 'BabyChakra', 'GrowingUpIndia',
+    ],
+  },
+  // ── Regional variants ──────────────────────────────────────────────────────
+  'tamil-food': {
+    dbCategory: 'food',
+    region: 'south-india',
+    languages: ['Tamil', 'English'],
+    language: 'ta',
+    queries: [
+      'Tamil food recipe cooking YouTube samayal',
+      'Tamil street food vlog YouTube Chennai',
+      'Tamil kitchen cooking channel YouTube',
+    ],
+    knownHandles: [
+      'HomeCookingShow', 'Kabita', 'ChettinadRecipes',
+      'TamilSamaiyal', 'VenkateshBhat', 'CooksAndKitchen',
+    ],
+  },
+  'tamil-beauty': {
+    dbCategory: 'beauty',
+    region: 'south-india',
+    languages: ['Tamil', 'English'],
+    language: 'ta',
+    queries: [
+      'Tamil beauty makeup tutorial YouTube',
+      'Tamil skincare beauty influencer YouTube',
+    ],
+  },
+  'tamil-entertainment': {
+    dbCategory: 'entertainment',
+    region: 'south-india',
+    languages: ['Tamil', 'English'],
+    language: 'ta',
+    queries: [
+      'Tamil comedy YouTube channel',
+      'Tamil entertainment vlog YouTube',
+    ],
+    knownHandles: ['VJsiddhu', 'BlackSheepOfficial', 'JustFunOfficial'],
+  },
+  'telugu-food': {
+    dbCategory: 'food',
+    region: 'south-india',
+    languages: ['Telugu', 'English'],
+    language: 'te',
+    queries: [
+      'Telugu cooking recipe YouTube Andhra',
+      'Telugu food vlog YouTube Hyderabad',
+      'Vismai Food Telugu cooking channel',
+    ],
+    knownHandles: ['VismaiFood', 'VismaiFood2', 'TeluguRuchulu', 'SwasThaKitchen'],
+  },
+  'telugu-tech': {
+    dbCategory: 'tech',
+    region: 'south-india',
+    languages: ['Telugu', 'English'],
+    language: 'te',
+    queries: [
+      'Telugu tech review YouTube smartphone',
+      'Telugu technology YouTube channel review',
+    ],
+    knownHandles: ['TeluguTechWorld', 'TechPanda', 'VCTTelugu'],
+  },
+  'telugu-entertainment': {
+    dbCategory: 'entertainment',
+    region: 'south-india',
+    languages: ['Telugu', 'English'],
+    language: 'te',
+    queries: [
+      'Telugu comedy YouTube channel',
+      'Telugu entertainment vlog funny YouTube',
+    ],
+    knownHandles: ['FunBucketOfficial', 'TeluguComedyClub', 'AhaTelugu'],
+  },
+  'kannada-entertainment': {
+    dbCategory: 'entertainment',
+    region: 'south-india',
+    languages: ['Kannada', 'English'],
+    language: 'kn',
+    queries: [
+      'Kannada comedy YouTube channel Bangalore',
+      'Kannada entertainment vlog YouTube',
+    ],
+    knownHandles: ['KannadaKoota', 'PranavKodikal', 'OfficialFunBucket'],
+  },
+  'kannada-food': {
+    dbCategory: 'food',
+    region: 'south-india',
+    languages: ['Kannada', 'English'],
+    language: 'kn',
+    queries: [
+      'Kannada cooking recipe YouTube Bangalore',
+      'Karnataka food vlog YouTube',
+    ],
+  },
+  'malayalam-food': {
+    dbCategory: 'food',
+    region: 'south-india',
+    languages: ['Malayalam', 'English'],
+    language: 'ml',
+    queries: [
+      'Malayalam cooking recipe YouTube Kerala',
+      'Kerala food vlog YouTube',
+      'Malayalam sadhya recipe YouTube',
+    ],
+    knownHandles: ['KeralaKitchen', 'NeethusKitchen', 'VillageCookingChannel'],
+  },
+  'malayalam-travel': {
+    dbCategory: 'travel',
+    region: 'south-india',
+    languages: ['Malayalam', 'English'],
+    language: 'ml',
+    queries: [
+      'Kerala travel vlog YouTube Malayalam',
+      'Malayalam travel vlogger YouTube',
+    ],
+    knownHandles: ['KeralaExplorer', 'TravelWithJijo'],
+  },
+  'bengali-food': {
+    dbCategory: 'food',
+    region: 'east-india',
+    languages: ['Bengali', 'English'],
+    language: 'bn',
+    queries: [
+      'Bengali cooking recipe YouTube Kolkata',
+      'Bangla food vlog YouTube',
+      'Bengali kitchen ranna recipe YouTube',
+    ],
+    knownHandles: ['BongEats', 'RannagharByMitali', 'KolkatanKhawa'],
+  },
+  'bengali-lifestyle': {
+    dbCategory: 'lifestyle',
+    region: 'east-india',
+    languages: ['Bengali', 'English'],
+    language: 'bn',
+    queries: [
+      'Bengali lifestyle vlog YouTube Kolkata',
+      'Bangla vlog YouTube daily life',
+    ],
+  },
+  'marathi-food': {
+    dbCategory: 'food',
+    region: 'west-india',
+    languages: ['Marathi', 'English'],
+    language: 'mr',
+    queries: [
+      'Marathi cooking recipe YouTube Maharashtra',
+      'Marathi food vlog YouTube Pune Mumbai',
+    ],
+    knownHandles: ['CookingWithSmita', 'MadhuraRecipe', 'MiMadhuraRecipe'],
+  },
+  'marathi-entertainment': {
+    dbCategory: 'entertainment',
+    region: 'west-india',
+    languages: ['Marathi', 'English'],
+    language: 'mr',
+    queries: [
+      'Marathi comedy YouTube channel',
+      'Marathi entertainment vlog YouTube',
+    ],
+  },
+  'gujarati-food': {
+    dbCategory: 'food',
+    region: 'west-india',
+    languages: ['Gujarati', 'Hindi', 'English'],
+    language: 'gu',
+    queries: [
+      'Gujarati cooking recipe YouTube',
+      'Gujarati food vlog YouTube Ahmedabad',
+    ],
+    knownHandles: ['GujaratiRasoi', 'CookingWithAsha'],
+  },
+  'punjabi-food': {
+    dbCategory: 'food',
+    region: 'north-india',
+    languages: ['Punjabi', 'Hindi', 'English'],
+    language: 'pa',
+    queries: [
+      'Punjabi cooking recipe dhaba YouTube',
+      'Punjabi food vlog YouTube Amritsar',
+    ],
+    knownHandles: ['PunjabiKhana', 'DhabaRecipes'],
+  },
+  'punjabi-fitness': {
+    dbCategory: 'fitness',
+    region: 'north-india',
+    languages: ['Punjabi', 'Hindi', 'English'],
+    language: 'pa',
+    queries: [
+      'Punjabi fitness gym workout YouTube',
+      'Punjab bodybuilding YouTube channel Hindi',
+    ],
+  },
+  'north-travel': {
+    dbCategory: 'travel',
+    region: 'north-india',
+    languages: ['Hindi', 'English'],
+    queries: [
+      'Himachal Pradesh travel vlog YouTube Hindi',
+      'Rajasthan travel vlog YouTube Hindi',
+      'Uttarakhand mountains travel YouTube',
+    ],
+  },
+  'south-travel': {
+    dbCategory: 'travel',
+    region: 'south-india',
+    languages: ['English', 'Hindi'],
+    queries: [
+      'South India travel vlog YouTube English',
+      'Kerala Goa Karnataka travel vlog YouTube',
     ],
   },
 }
@@ -618,6 +851,7 @@ async function ingest(category: string, maxChannels = 50) {
   console.log(`\n[ingest] Starting — category: ${category}, max channels: ${maxChannels}`)
 
   const config = CATEGORY_CONFIG[category]
+  const dbCategory = config?.dbCategory ?? category
   const channels = await searchIndianChannels(category, maxChannels)
   console.log(`[ingest] Found ${channels.length} channels`)
 
@@ -626,7 +860,7 @@ async function ingest(category: string, maxChannels = 50) {
   for (const channel of channels) {
     console.log(`  → ${channel.title} (${channel.subscriberCount} subs)`)
 
-    const creatorId = await upsertCreator(channel, category, {
+    const creatorId = await upsertCreator(channel, dbCategory, {
       region: config?.region,
       languages: config?.languages,
     })
