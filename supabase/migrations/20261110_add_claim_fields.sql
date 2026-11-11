@@ -11,7 +11,7 @@ ALTER TABLE creators
   ADD COLUMN IF NOT EXISTS rate_youtube_max   INTEGER,
   ADD COLUMN IF NOT EXISTS rate_story_min     INTEGER,
   ADD COLUMN IF NOT EXISTS rate_story_max     INTEGER,
-  ADD COLUMN IF NOT EXISTS available_for_collabs BOOLEAN DEFAULT true,
+  ADD COLUMN IF NOT EXISTS available_for_collabs BOOLEAN DEFAULT false,
   ADD COLUMN IF NOT EXISTS preferred_deal_types  TEXT[]  DEFAULT '{}';
 
 -- Allow claimed creator to update their own row

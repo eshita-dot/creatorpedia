@@ -200,7 +200,7 @@ function renderPage(
                         Verified
                       </span>
                     )}
-                    {creator.available_for_collabs && (
+                    {creator.available_for_collabs && creator.claim_status === 'claimed' && (
                       <span className="shrink-0 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-950/50 dark:text-green-400">
                         Open
                       </span>
