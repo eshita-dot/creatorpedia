@@ -225,6 +225,9 @@ interface YouTubeVideo {
   description: string
   publishedAt: string
   channelId: string
+  viewCount?: number
+  likeCount?: number
+  commentCount?: number
 }
 
 // ── YouTube API helpers ───────────────────────────────────────────────────────
@@ -703,7 +706,7 @@ async function fetchVideoIdsFromPlaylist(playlistId: string, maxResults: number)
 
 async function fetchVideoDetails(videoIds: string[]): Promise<YouTubeVideo[]> {
   const url = new URL('https://www.googleapis.com/youtube/v3/videos')
-  url.searchParams.set('part', 'snippet')
+  url.searchParams.set('part', 'snippet,statistics')
   url.searchParams.set('id', videoIds.join(','))
   url.searchParams.set('key', YOUTUBE_API_KEY)
   const res = await fetch(url.toString())
@@ -712,12 +715,16 @@ async function fetchVideoDetails(videoIds: string[]): Promise<YouTubeVideo[]> {
     (item: {
       id: string
       snippet: { title: string; description: string; publishedAt: string; channelId: string }
+      statistics: { viewCount?: string; likeCount?: string; commentCount?: string }
     }) => ({
       videoId: item.id,
       title: item.snippet.title,
       description: item.snippet.description,
       publishedAt: item.snippet.publishedAt,
       channelId: item.snippet.channelId,
+      viewCount: item.statistics.viewCount ? parseInt(item.statistics.viewCount, 10) : undefined,
+      likeCount: item.statistics.likeCount ? parseInt(item.statistics.likeCount, 10) : undefined,
+      commentCount: item.statistics.commentCount ? parseInt(item.statistics.commentCount, 10) : undefined,
     })
   )
 }
@@ -776,7 +783,7 @@ function inferDealType(text: string): 'paid' | 'barter' | 'gifted' | 'unknown' {
 async function upsertCreator(
   channel: YouTubeChannel,
   category: string,
-  options?: { region?: string; languages?: string[] }
+  options?: { region?: string; languages?: string[]; avg_views?: number; avg_engagement_rate?: number }
 ) {
   const subscriberCount = parseInt(channel.subscriberCount || '0', 10)
   const tier =
@@ -800,6 +807,8 @@ async function upsertCreator(
         languages: options?.languages ?? ['Hindi', 'English'],
         followers_youtube: subscriberCount,
         pricing_tier: tier,
+        avg_views: options?.avg_views ?? null,
+        avg_engagement_rate: options?.avg_engagement_rate ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'handle,platform' }
@@ -860,13 +869,27 @@ async function ingest(category: string, maxChannels = 50) {
   for (const channel of channels) {
     console.log(`  → ${channel.title} (${channel.subscriberCount} subs)`)
 
+    const videos = await fetchRecentVideos(channel.channelId, 30)
+
+    // Compute avg views and engagement rate from video statistics
+    const statsVideos = videos.filter(v => v.viewCount !== undefined && v.viewCount > 0)
+    const avg_views = statsVideos.length > 0
+      ? Math.round(statsVideos.reduce((s, v) => s + (v.viewCount ?? 0), 0) / statsVideos.length)
+      : undefined
+    const avg_engagement_rate = statsVideos.length > 0
+      ? parseFloat((statsVideos.reduce((s, v) => {
+          const eng = ((v.likeCount ?? 0) + (v.commentCount ?? 0)) / (v.viewCount ?? 1)
+          return s + eng
+        }, 0) / statsVideos.length * 100).toFixed(2))
+      : undefined
+
     const creatorId = await upsertCreator(channel, dbCategory, {
       region: config?.region,
       languages: config?.languages,
+      avg_views,
+      avg_engagement_rate,
     })
     if (!creatorId) continue
-
-    const videos = await fetchRecentVideos(channel.channelId, 30)
 
     // Collect brand mentions from ALL videos — disclosed or not.
     // Disclosed videos get the proper deal_type; undisclosed get 'unknown'.
