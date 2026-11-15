@@ -113,7 +113,20 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
               </span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">@{creator.handle}</p>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span>@{creator.handle}</span>
+            {creator.instagram_handle && (
+              <a
+                href={`https://instagram.com/${creator.instagram_handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 hover:text-pink-500 transition-colors"
+              >
+                <IgIcon />
+                @{creator.instagram_handle}
+              </a>
+            )}
+          </div>
 
           {creator.bio && (
             <p className="mt-1.5 text-sm text-muted-foreground">{creator.bio}</p>
