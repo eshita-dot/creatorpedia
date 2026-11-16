@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { formatFollowers, regionLabel } from '@/lib/mock-data'
 import { SearchFiltersPanel } from './SearchFiltersPanel'
+import { LiveLookup } from '@/components/search/LiveLookup'
 import type { SearchResult } from '@/types'
 
 interface SearchPageProps {
@@ -319,16 +320,19 @@ function renderPage(
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center py-20 text-center">
-          <p className="text-sm font-medium">No creators found</p>
+        <div className="flex flex-col items-center py-12 text-center">
+          <p className="text-sm font-medium">Not in our database yet</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Try a different search term or remove some filters
+            {q ? 'Checking YouTube right now…' : 'Try a different search term or remove some filters'}
           </p>
-          <Link href="/search" className="mt-4 text-xs text-brand-600 hover:underline">
-            Clear all and start over
-          </Link>
+          {!q && (
+            <Link href="/search" className="mt-4 text-xs text-brand-600 hover:underline">
+              Clear all and start over
+            </Link>
+          )}
         </div>
       )}
+      {results.length === 0 && q && <LiveLookup query={q} />}
     </div>
   )
 }
