@@ -280,7 +280,7 @@ async function upsertCreator(channel: YTChannel, category: string, stats: { avg_
     .select('id')
     .single()
 
-  if (error) { console.error('[on-demand] creator upsert:', error.message); throw new Error(`creator upsert: ${error.message}`) }
+  if (error) { console.error('[on-demand] creator upsert:', error.message); return null }
   return data?.id as string | null
 }
 
@@ -324,7 +324,7 @@ async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null>
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usernames: [handle], resultsLimit: 1 }),
-        signal: AbortSignal.timeout(22000),
+        signal: AbortSignal.timeout(7000),
       }
     )
     if (!res.ok) return null
@@ -361,7 +361,7 @@ async function upsertInstagramCreator(profile: IGProfile, category: string) {
     .select('id')
     .single()
 
-  if (error) { console.error('[on-demand] IG upsert:', error.message); throw new Error(`IG upsert: ${error.message}`) }
+  if (error) { console.error('[on-demand] IG upsert:', error.message); return null }
   return data?.id as string | null
 }
 
@@ -456,8 +456,7 @@ export async function POST(req: NextRequest) {
       collab_count: collabCount,
     })
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    console.error('[on-demand-ingest] error:', msg)
-    return NextResponse.json({ error: msg }, { status: 500 })
+    console.error('[on-demand-ingest] error:', e)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
