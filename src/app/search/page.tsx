@@ -124,11 +124,17 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     query = query.order('avg_engagement_rate', { ascending: false, nullsFirst: false })
   } else if (sort === 'recent') {
     query = query.order('created_at', { ascending: false })
-  } else {
-    // default + followers sort: verified first, then followers
+  } else if (sort === 'followers') {
+    // YouTube-first ingest: rank by YT subscribers, fall back to IG
     query = query
-      .order('verified',              { ascending: false })
-      .order('followers_instagram',   { ascending: false, nullsFirst: false })
+      .order('followers_youtube',   { ascending: false, nullsFirst: false })
+      .order('followers_instagram', { ascending: false, nullsFirst: false })
+  } else {
+    // default: verified first, then largest audience
+    query = query
+      .order('verified',            { ascending: false })
+      .order('followers_youtube',   { ascending: false, nullsFirst: false })
+      .order('followers_instagram', { ascending: false, nullsFirst: false })
   }
 
   const { data: rows, error } = await query
@@ -148,7 +154,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     results = results.sort((a, b) => b.collab_count - a.collab_count)
   } else if (sort === 'followers') {
     results = results.sort((a, b) =>
-      (b.followers_instagram ?? 0) - (a.followers_instagram ?? 0)
+      Math.max(b.followers_youtube ?? 0, b.followers_instagram ?? 0) -
+      Math.max(a.followers_youtube ?? 0, a.followers_instagram ?? 0)
     )
   }
 
@@ -243,6 +250,11 @@ function renderPage(
                 {creator.followers_youtube && (
                   <span>
                     <span className="font-semibold text-foreground">{formatFollowers(creator.followers_youtube)}</span> YT
+                  </span>
+                )}
+                {creator.avg_views && (
+                  <span>
+                    <span className="font-semibold text-foreground">{formatFollowers(creator.avg_views)}</span> avg views
                   </span>
                 )}
                 {creator.avg_engagement_rate && (
