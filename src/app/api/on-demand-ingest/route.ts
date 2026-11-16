@@ -6,6 +6,7 @@ const sb = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 const YT_KEY = process.env.YOUTUBE_API_KEY!
+const APIFY_TOKEN = process.env.APIFY_TOKEN!
 
 // ── Disclosure detection ──────────────────────────────────────────────────────
 
@@ -305,6 +306,65 @@ async function insertCollab(creatorId: string, brandId: string, video: YTVideo, 
   }, { onConflict: 'creator_id,brand_id,collab_date', ignoreDuplicates: true })
 }
 
+// ── Instagram via Apify ───────────────────────────────────────────────────────
+
+interface IGProfile {
+  username: string
+  fullName?: string
+  biography?: string
+  followersCount?: number
+  isVerified?: boolean
+}
+
+async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null> {
+  try {
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usernames: [handle], resultsLimit: 1 }),
+        signal: AbortSignal.timeout(22000),
+      }
+    )
+    if (!res.ok) return null
+    const profiles = await res.json() as IGProfile[]
+    return profiles[0] ?? null
+  } catch {
+    return null
+  }
+}
+
+async function upsertInstagramCreator(profile: IGProfile, category: string) {
+  const followers = profile.followersCount ?? 0
+  const tier =
+    followers >= 1_000_000 ? 'mega' :
+    followers >= 500_000   ? 'macro' :
+    followers >= 100_000   ? 'mid' :
+    followers >= 10_000    ? 'micro' : 'nano'
+
+  const { data, error } = await sb
+    .from('creators')
+    .upsert({
+      handle: profile.username,
+      platform: 'instagram',
+      name: profile.fullName || profile.username,
+      bio: (profile.biography ?? '').substring(0, 500),
+      instagram_handle: profile.username,
+      category,
+      region: 'pan-india',
+      languages: ['Hindi', 'English'],
+      followers_instagram: followers,
+      pricing_tier: tier,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'handle,platform' })
+    .select('id')
+    .single()
+
+  if (error) { console.error('[on-demand] IG upsert:', error.message); return null }
+  return data?.id as string | null
+}
+
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -316,19 +376,40 @@ export async function POST(req: NextRequest) {
 
     const q = query.trim().replace(/^@/, '')
 
-    // 1. Try handle lookup first (1 quota unit)
-    let channel = await lookupByHandle(q)
+    // Queries without spaces are likely handles — try platform-specific lookups.
+    // Queries with spaces are name searches — YouTube search.list only.
+    const isHandleLike = !q.includes(' ') && q.length >= 3
 
-    // 2. Fall back to channel search (100 quota units)
+    // 1. Try YouTube handle lookup (1 quota unit)
+    let channel = isHandleLike ? await lookupByHandle(q) : null
+
+    // 2. If handle not on YouTube and query looks like a handle, try Instagram via Apify
+    if (!channel && isHandleLike && APIFY_TOKEN) {
+      const igProfile = await scrapeInstagramProfile(q)
+      if (igProfile?.username) {
+        const category = inferCategory(igProfile.fullName ?? '', igProfile.biography ?? '')
+        const creatorId = await upsertInstagramCreator(igProfile, category)
+        if (!creatorId) return NextResponse.json({ error: 'Failed to index creator' }, { status: 500 })
+        return NextResponse.json({
+          handle: igProfile.username,
+          name: igProfile.fullName || igProfile.username,
+          platform: 'instagram',
+          followers_instagram: igProfile.followersCount,
+          collab_count: 0,
+        })
+      }
+    }
+
+    // 3. Fall back to YouTube channel search (100 quota units) — handles name queries too
     if (!channel) {
       channel = await searchChannel(q)
     }
 
     if (!channel) {
-      return NextResponse.json({ error: 'Creator not found on YouTube' }, { status: 404 })
+      return NextResponse.json({ error: 'Creator not found on YouTube or Instagram' }, { status: 404 })
     }
 
-    // 3. Fetch recent videos + compute stats
+    // 4. Fetch recent videos + compute stats
     const videos = await fetchRecentVideos(channel.channelId)
     const statsVideos = videos.filter(v => v.viewCount && v.viewCount > 0)
     const avg_views = statsVideos.length > 0
@@ -340,16 +421,16 @@ export async function POST(req: NextRequest) {
         , 0) / statsVideos.length * 100).toFixed(2))
       : undefined
 
-    // 4. Infer category from channel content
+    // 5. Infer category from channel content
     const category = inferCategory(channel.title, channel.description)
 
-    // 5. Upsert creator
+    // 6. Upsert creator
     const creatorId = await upsertCreator(channel, category, { avg_views, avg_engagement_rate })
     if (!creatorId) {
       return NextResponse.json({ error: 'Failed to index creator' }, { status: 500 })
     }
 
-    // 6. Extract brand mentions + upsert collabs
+    // 7. Extract brand mentions + upsert collabs
     let collabCount = 0
     for (const video of videos) {
       const fullText = video.title + ' ' + video.description
@@ -368,6 +449,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       handle: channel.handle,
       name: channel.title,
+      platform: 'youtube',
       followers_youtube: parseInt(channel.subscriberCount || '0', 10),
       avg_views,
       avg_engagement_rate,
