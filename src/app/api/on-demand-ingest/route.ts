@@ -214,14 +214,8 @@ async function searchChannel(query: string): Promise<YTChannel | null> {
 
 async function fetchRecentVideos(channelId: string): Promise<YTVideo[]> {
   try {
-    const chUrl = new URL('https://www.googleapis.com/youtube/v3/channels')
-    chUrl.searchParams.set('part', 'contentDetails')
-    chUrl.searchParams.set('id', channelId)
-    chUrl.searchParams.set('key', YT_KEY)
-    const chRes = await fetch(chUrl.toString(), { signal: AbortSignal.timeout(3000) })
-    const chData = await chRes.json()
-    const playlistId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
-    if (!playlistId) return []
+    // Uploads playlist ID = channel ID with "UC" prefix replaced by "UU" (saves 1 API call)
+    const playlistId = channelId.replace(/^UC/, 'UU')
 
     const plUrl = new URL('https://www.googleapis.com/youtube/v3/playlistItems')
     plUrl.searchParams.set('part', 'contentDetails')
