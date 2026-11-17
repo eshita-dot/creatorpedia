@@ -6,7 +6,8 @@ const sb = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 const YT_KEY = process.env.YOUTUBE_API_KEY!
-const APIFY_TOKEN = process.env.APIFY_TOKEN!
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY!
+const IG_API_HOST = 'instagram-scraper-api2.p.rapidapi.com'
 
 // ── Disclosure detection ──────────────────────────────────────────────────────
 
@@ -417,7 +418,7 @@ async function insertCollab(creatorId: string, brandId: string, video: YTVideo, 
   }, { onConflict: 'creator_id,brand_id,collab_date', ignoreDuplicates: true })
 }
 
-// ── Instagram profile + posts via Apify (single actor call) ──────────────────
+// ── Instagram profile + posts via RapidAPI Instagram Scraper API2 ─────────────
 
 interface IGProfile {
   username: string
@@ -433,7 +434,6 @@ interface IGPost {
   likesCount?: number
   commentsCount?: number
   caption?: string
-  captionText?: string
   timestamp?: string
   takenAtTimestamp?: number
   type?: string
@@ -441,62 +441,79 @@ interface IGPost {
   paidPartnership?: boolean
 }
 
-// Profile scraper also returns latestPosts[] — read both from one response
-async function scrapeInstagramProfile(handle: string): Promise<{ profile: IGProfile | null; posts: IGPost[] }> {
+async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null> {
   try {
     const res = await fetch(
-      `https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+      `https://${IG_API_HOST}/v1/info?username_or_id_or_url=${encodeURIComponent(handle)}`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usernames: [handle], resultsLimit: 1 }),
-        signal: AbortSignal.timeout(22000),
+        headers: {
+          'X-RapidAPI-Key': RAPIDAPI_KEY,
+          'X-RapidAPI-Host': IG_API_HOST,
+        },
+        signal: AbortSignal.timeout(8000),
       }
     )
-    if (!res.ok) return { profile: null, posts: [] }
-    const items = await res.json() as Array<IGProfile & { latestPosts?: IGPost[] }>
-    const account = items[0]
-    if (!account?.username) return { profile: null, posts: [] }
+    if (!res.ok) return null
+    const json = await res.json()
+    const u = json?.data?.user
+    if (!u?.username) return null
     return {
-      profile: {
-        username: account.username,
-        fullName: account.fullName,
-        biography: account.biography,
-        followersCount: account.followersCount,
-        isVerified: account.isVerified,
-      },
-      posts: account.latestPosts ?? [],
+      username: u.username,
+      fullName: u.full_name,
+      biography: u.biography,
+      followersCount: u.follower_count,
+      isVerified: u.is_verified,
     }
   } catch {
-    return { profile: null, posts: [] }
+    return null
   }
 }
 
-// Fallback posts scraper — runs in parallel with profile; whichever returns posts first wins
 async function scrapeInstagramPosts(handle: string): Promise<IGPost[]> {
   try {
     const res = await fetch(
-      `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+      `https://${IG_API_HOST}/v1.2/posts?username_or_id_or_url=${encodeURIComponent(handle)}`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          directUrls: [`https://www.instagram.com/${handle}/`],
-          resultsType: 'posts',
-          resultsLimit: 8,
-        }),
-        signal: AbortSignal.timeout(22000),
+        headers: {
+          'X-RapidAPI-Key': RAPIDAPI_KEY,
+          'X-RapidAPI-Host': IG_API_HOST,
+        },
+        signal: AbortSignal.timeout(8000),
       }
     )
     if (!res.ok) return []
-    return await res.json() as IGPost[]
+    const json = await res.json()
+    const items: Array<{
+      code?: string
+      taken_at?: number
+      like_count?: number
+      comment_count?: number
+      play_count?: number
+      view_count?: number
+      caption?: { text?: string }
+      media_type?: number
+      paid_partnership?: boolean
+      thumbnail_url?: string
+    }> = json?.data?.items ?? []
+    return items.map(p => ({
+      shortCode: p.code,
+      takenAtTimestamp: p.taken_at,
+      likesCount: p.like_count,
+      commentsCount: p.comment_count,
+      videoViewCount: p.play_count ?? p.view_count,
+      caption: p.caption?.text,
+      // media_type: 1=Photo, 2=Video, 8=Carousel
+      type: p.media_type === 2 ? 'Video' : p.media_type === 8 ? 'Sidecar' : 'Image',
+      paidPartnership: p.paid_partnership,
+      url: p.thumbnail_url,
+    }))
   } catch {
     return []
   }
 }
 
 function getPostCaption(post: IGPost): string {
-  return post.caption ?? post.captionText ?? ''
+  return post.caption ?? ''
 }
 
 function getPostDate(post: IGPost): string {
@@ -592,14 +609,12 @@ export async function POST(req: NextRequest) {
     // 1. Try YouTube handle lookup (1 quota unit)
     let channel = isYouTubeHandleLike ? await lookupByHandle(q) : null
 
-    // 2. If handle-like and no YT match, try Instagram — both run in parallel, posts merged from either
-    if (!channel && isHandleLike && APIFY_TOKEN) {
-      const [{ profile: igProfile, posts: profilePosts }, scraperPosts] = await Promise.all([
+    // 2. If handle-like and no YT match, try Instagram — profile + posts in parallel
+    if (!channel && isHandleLike && RAPIDAPI_KEY) {
+      const [igProfile, igPosts] = await Promise.all([
         scrapeInstagramProfile(q),
         scrapeInstagramPosts(q),
       ])
-      // Use latestPosts from profile scraper; fall back to dedicated posts scraper if richer
-      const igPosts = (profilePosts.length >= scraperPosts.length ? profilePosts : scraperPosts)
 
       if (igProfile?.username) {
         const category = inferCategory(igProfile.fullName ?? '', igProfile.biography ?? '')
