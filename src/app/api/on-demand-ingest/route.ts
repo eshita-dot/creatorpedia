@@ -441,8 +441,8 @@ interface IGPost {
   paidPartnership?: boolean
 }
 
-// instagram-profile-scraper returns profile + latestPosts in one call — one cold start
-async function scrapeInstagram(handle: string): Promise<{ profile: IGProfile | null; posts: IGPost[] }> {
+// Profile scraper also returns latestPosts[] — read both from one response
+async function scrapeInstagramProfile(handle: string): Promise<{ profile: IGProfile | null; posts: IGPost[] }> {
   try {
     const res = await fetch(
       `https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
@@ -469,6 +469,29 @@ async function scrapeInstagram(handle: string): Promise<{ profile: IGProfile | n
     }
   } catch {
     return { profile: null, posts: [] }
+  }
+}
+
+// Fallback posts scraper — runs in parallel with profile; whichever returns posts first wins
+async function scrapeInstagramPosts(handle: string): Promise<IGPost[]> {
+  try {
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          directUrls: [`https://www.instagram.com/${handle}/`],
+          resultsType: 'posts',
+          resultsLimit: 8,
+        }),
+        signal: AbortSignal.timeout(20000),
+      }
+    )
+    if (!res.ok) return []
+    return await res.json() as IGPost[]
+  } catch {
+    return []
   }
 }
 
@@ -568,9 +591,14 @@ export async function POST(req: NextRequest) {
     // 1. Try YouTube handle lookup (1 quota unit)
     let channel = isYouTubeHandleLike ? await lookupByHandle(q) : null
 
-    // 2. If handle-like and no YT match, try Instagram — single actor call gets profile + posts
+    // 2. If handle-like and no YT match, try Instagram — both run in parallel, posts merged from either
     if (!channel && isHandleLike && APIFY_TOKEN) {
-      const { profile: igProfile, posts: igPosts } = await scrapeInstagram(q)
+      const [{ profile: igProfile, posts: profilePosts }, scraperPosts] = await Promise.all([
+        scrapeInstagramProfile(q),
+        scrapeInstagramPosts(q),
+      ])
+      // Use latestPosts from profile scraper; fall back to dedicated posts scraper if richer
+      const igPosts = (profilePosts.length >= scraperPosts.length ? profilePosts : scraperPosts)
 
       if (igProfile?.username) {
         const category = inferCategory(igProfile.fullName ?? '', igProfile.biography ?? '')
