@@ -573,8 +573,10 @@ export async function POST(req: NextRequest) {
 
     const q = query.trim().replace(/^@/, '')
     const isHandleLike = !q.includes(' ') && q.length >= 3
+    // YouTube handles don't allow underscores — skip lookup to save time for Instagram-style handles
+    const isYouTubeHandleLike = isHandleLike && !q.includes('_')
     // 1. Try YouTube handle lookup (1 quota unit)
-    let channel = isHandleLike ? await lookupByHandle(q) : null
+    let channel = isYouTubeHandleLike ? await lookupByHandle(q) : null
 
     // 2. If handle-like and no YT match, try Instagram — profile + posts in parallel
     if (!channel && isHandleLike && APIFY_TOKEN) {
@@ -652,7 +654,11 @@ export async function POST(req: NextRequest) {
 
     // 3. Fall back to YouTube channel search (100 quota units) — handles name queries too
     if (!channel) {
-      channel = await searchChannel(q)
+      const found = await searchChannel(q)
+      // Discard micro-channels from search noise (< 1000 subs is not a creator)
+      if (found && parseInt(found.subscriberCount || '0', 10) >= 1000) {
+        channel = found
+      }
     }
 
     if (!channel) {
