@@ -462,7 +462,12 @@ export async function POST(req: NextRequest) {
     // 1. Try YouTube handle lookup (1 quota unit)
     let channel = isHandleLike ? await lookupByHandle(q) : null
 
-    // 2. If not on YouTube and handle-like, try Instagram — profile + posts in parallel
+    // 2. Try YouTube search (100 quota units) before Instagram — avoids wasting 7s on IG for YT creators
+    if (!channel) {
+      channel = await searchChannel(q)
+    }
+
+    // 3. If YouTube has no match and handle-like, try Instagram — profile + posts in parallel
     if (!channel && isHandleLike && APIFY_TOKEN) {
       const [igProfile, igPosts] = await Promise.all([
         scrapeInstagramProfile(q),
@@ -520,11 +525,6 @@ export async function POST(req: NextRequest) {
           collab_count: toIndex.length,
         })
       }
-    }
-
-    // 3. Fall back to YouTube channel search (100 quota units) — handles name queries too
-    if (!channel) {
-      channel = await searchChannel(q)
     }
 
     if (!channel) {
