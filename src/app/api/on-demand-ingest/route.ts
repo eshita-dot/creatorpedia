@@ -464,11 +464,9 @@ export async function POST(req: NextRequest) {
 
     const q = query.trim().replace(/^@/, '')
     const isHandleLike = !q.includes(' ') && q.length >= 3
-    const t0 = Date.now()
 
     // 1. Try YouTube handle lookup (1 quota unit)
     let channel = isHandleLike ? await lookupByHandle(q) : null
-    console.log(`[timing] lookupByHandle: ${Date.now()-t0}ms channel=${!!channel}`)
 
     // 2. If handle-like and no YT match, try Instagram — profile + posts in parallel
     if (!channel && isHandleLike && APIFY_TOKEN) {
@@ -506,12 +504,18 @@ export async function POST(req: NextRequest) {
           for (const brand of brands) toIndex.push({ brand, post, tags, dealType })
         }
 
-        // Batch: upsert unique brands in parallel, then collabs in parallel
+        // Deduplicate to latest post per brand, then batch upsert
         if (toIndex.length > 0) {
-          const uniqueBrands = [...new Map(toIndex.map(x => [x.brand.name, x.brand])).values()]
-          const brandIds = await Promise.all(uniqueBrands.map(b => upsertBrand(b)))
-          const brandIdMap = new Map(uniqueBrands.map((b, i) => [b.name, brandIds[i]]))
-          await Promise.all(toIndex.map(x => {
+          const latestIG = new Map<string, typeof toIndex[0]>()
+          for (const item of toIndex) {
+            const ex = latestIG.get(item.brand.name)
+            const itemDate = getPostDate(item.post)
+            if (!ex || itemDate > getPostDate(ex.post)) latestIG.set(item.brand.name, item)
+          }
+          const dedupedIG = [...latestIG.values()]
+          const brandIds = await Promise.all(dedupedIG.map(x => upsertBrand(x.brand)))
+          const brandIdMap = new Map(dedupedIG.map((x, i) => [x.brand.name, brandIds[i]]))
+          await Promise.all(dedupedIG.map(x => {
             const brandId = brandIdMap.get(x.brand.name)
             if (!brandId) return
             return insertIGCollab(creatorId, brandId, x.post, x.tags, x.dealType)
@@ -540,9 +544,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Fetch recent videos + compute stats
-    console.log(`[timing] before fetchRecentVideos: ${Date.now()-t0}ms`)
     const videos = await fetchRecentVideos(channel.channelId)
-    console.log(`[timing] after fetchRecentVideos: ${Date.now()-t0}ms videos=${videos.length}`)
     const statsVideos = videos.filter(v => v.viewCount && v.viewCount > 0)
     const avg_views = statsVideos.length > 0
       ? Math.round(statsVideos.reduce((s, v) => s + (v.viewCount ?? 0), 0) / statsVideos.length)
@@ -556,9 +558,7 @@ export async function POST(req: NextRequest) {
     const category = inferCategory(channel.title, channel.description)
 
     // 5. Upsert creator
-    console.log(`[timing] before upsertCreator: ${Date.now()-t0}ms`)
     const creatorId = await upsertCreator(channel, category, { avg_views, avg_engagement_rate })
-    console.log(`[timing] after upsertCreator: ${Date.now()-t0}ms id=${creatorId}`)
     if (!creatorId) {
       return NextResponse.json({ error: 'Failed to index creator' }, { status: 500 })
     }
@@ -577,10 +577,17 @@ export async function POST(req: NextRequest) {
 
     let collabCount = 0
     if (toIndexYT.length > 0) {
-      const uniqueBrands = [...new Map(toIndexYT.map(x => [x.brand.name, x.brand])).values()]
-      const brandIds = await Promise.all(uniqueBrands.map(b => upsertBrand(b)))
-      const brandIdMap = new Map(uniqueBrands.map((b, i) => [b.name, brandIds[i]]))
-      await Promise.all(toIndexYT.map(x => {
+      // Keep only the most recent video per brand to bound Supabase calls
+      const latestByBrand = new Map<string, typeof toIndexYT[0]>()
+      for (const item of toIndexYT) {
+        const ex = latestByBrand.get(item.brand.name)
+        if (!ex || item.video.publishedAt > ex.video.publishedAt) latestByBrand.set(item.brand.name, item)
+      }
+      const deduped = [...latestByBrand.values()]
+
+      const brandIds = await Promise.all(deduped.map(x => upsertBrand(x.brand)))
+      const brandIdMap = new Map(deduped.map((x, i) => [x.brand.name, brandIds[i]]))
+      await Promise.all(deduped.map(x => {
         const brandId = brandIdMap.get(x.brand.name)
         if (!brandId) return
         collabCount++
