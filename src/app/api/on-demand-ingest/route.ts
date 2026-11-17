@@ -323,6 +323,7 @@ interface IGPost {
   takenAtTimestamp?: number
   type?: string
   videoViewCount?: number
+  paidPartnership?: boolean
 }
 
 async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null> {
@@ -354,9 +355,9 @@ async function scrapeInstagramPosts(handle: string): Promise<IGPost[]> {
         body: JSON.stringify({
           directUrls: [`https://www.instagram.com/${handle}/`],
           resultsType: 'posts',
-          resultsLimit: 20,
+          resultsLimit: 8,
         }),
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(7000),
       }
     )
     if (!res.ok) return []
@@ -485,11 +486,15 @@ export async function POST(req: NextRequest) {
         const toIndex: BrandCollab[] = []
         for (const post of igPosts) {
           const caption = getPostCaption(post)
-          if (!caption) continue
+          const isSponsored = post.paidPartnership === true || DISCLOSURE_PATTERNS.some(p => p.test(caption))
+          if (!isSponsored && !caption) continue
           const brands = extractBrandMentions(caption)
           if (!brands.length) continue
-          const tags = extractDisclosureTags(caption)
-          const dealType = inferDealType(caption)
+          const tags = [
+            ...(post.paidPartnership ? ['paid partnership'] : []),
+            ...extractDisclosureTags(caption),
+          ]
+          const dealType = post.paidPartnership ? 'paid' : inferDealType(caption)
           for (const brand of brands) toIndex.push({ brand, post, tags, dealType })
         }
 
