@@ -217,7 +217,7 @@ async function fetchRecentVideos(channelId: string): Promise<YTVideo[]> {
   const plUrl = new URL('https://www.googleapis.com/youtube/v3/playlistItems')
   plUrl.searchParams.set('part', 'contentDetails')
   plUrl.searchParams.set('playlistId', playlistId)
-  plUrl.searchParams.set('maxResults', '30')
+  plUrl.searchParams.set('maxResults', '12')
   plUrl.searchParams.set('key', YT_KEY)
   const plRes = await fetch(plUrl.toString())
   const plData = await plRes.json()
@@ -551,20 +551,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to index creator' }, { status: 500 })
     }
 
-    // 6. Extract brand mentions from video titles + descriptions, upsert collabs
-    let collabCount = 0
+    // 6. Extract brand mentions from video titles + descriptions, batch upsert collabs
+    type YTCollab = { brand: { name: string; category: string; is_d2c: boolean }; video: YTVideo; tags: string[]; dealType: string }
+    const toIndexYT: YTCollab[] = []
     for (const video of videos) {
       const fullText = video.title + ' ' + video.description
       const brands = extractBrandMentions(fullText)
       if (!brands.length) continue
       const tags = extractDisclosureTags(fullText)
       const dealType = inferDealType(fullText)
-      for (const brand of brands) {
-        const brandId = await upsertBrand(brand)
-        if (!brandId) continue
-        await insertCollab(creatorId, brandId, video, tags, dealType)
+      for (const brand of brands) toIndexYT.push({ brand, video, tags, dealType })
+    }
+
+    let collabCount = 0
+    if (toIndexYT.length > 0) {
+      const uniqueBrands = [...new Map(toIndexYT.map(x => [x.brand.name, x.brand])).values()]
+      const brandIds = await Promise.all(uniqueBrands.map(b => upsertBrand(b)))
+      const brandIdMap = new Map(uniqueBrands.map((b, i) => [b.name, brandIds[i]]))
+      await Promise.all(toIndexYT.map(x => {
+        const brandId = brandIdMap.get(x.brand.name)
+        if (!brandId) return
         collabCount++
-      }
+        return insertCollab(creatorId, brandId, x.video, x.tags, x.dealType)
+      }))
     }
 
     return NextResponse.json({
