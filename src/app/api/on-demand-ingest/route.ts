@@ -165,6 +165,8 @@ async function lookupByHandle(handle: string): Promise<YTChannel | null> {
     const data = await res.json()
     const item = data.items?.[0]
     if (!item) return null
+    // Skip channels with 0 subscribers — likely a dead/secondary account (e.g., bhuvan.bam22)
+    if (!item.statistics?.subscriberCount || item.statistics.subscriberCount === '0') return null
     return {
       channelId: item.id,
       title: item.snippet.title,
@@ -480,8 +482,10 @@ export async function POST(req: NextRequest) {
         const avg_engagement_rate = calcIGEngagementRate(igPosts, followers)
         const avg_views = calcIGAvgViews(igPosts)
 
-        const creatorId = await upsertInstagramCreator(igProfile, category, { avg_engagement_rate, avg_views })
-        if (!creatorId) return NextResponse.json({ error: 'Failed to index creator' }, { status: 500 })
+        const creatorId = await Promise.race([
+          upsertInstagramCreator(igProfile, category, { avg_engagement_rate, avg_views }),
+          new Promise<null>(resolve => setTimeout(() => resolve(null), 10000)),
+        ])
 
         // Extract brand mentions across all posts
         type BrandCollab = {
@@ -504,7 +508,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Deduplicate to latest post per brand, then batch upsert with 5s budget
-        if (toIndex.length > 0) {
+        if (creatorId && toIndex.length > 0) {
           const latestIG = new Map<string, typeof toIndex[0]>()
           for (const item of toIndex) {
             const ex = latestIG.get(item.brand.name)
@@ -562,11 +566,11 @@ export async function POST(req: NextRequest) {
 
     const category = inferCategory(channel.title, channel.description)
 
-    // 5. Upsert creator
-    const creatorId = await upsertCreator(channel, category, { avg_views, avg_engagement_rate })
-    if (!creatorId) {
-      return NextResponse.json({ error: 'Failed to index creator' }, { status: 500 })
-    }
+    // 5. Upsert creator (10s budget — Supabase sometimes hangs; still return data if it does)
+    const creatorId = await Promise.race([
+      upsertCreator(channel, category, { avg_views, avg_engagement_rate }),
+      new Promise<null>(resolve => setTimeout(() => resolve(null), 10000)),
+    ])
 
     // 6. Extract brand mentions from video titles + descriptions, batch upsert collabs
     type YTCollab = { brand: { name: string; category: string; is_d2c: boolean }; video: YTVideo; tags: string[]; dealType: string }
@@ -581,7 +585,7 @@ export async function POST(req: NextRequest) {
     }
 
     let collabCount = 0
-    if (toIndexYT.length > 0) {
+    if (creatorId && toIndexYT.length > 0) {
       // Keep only the most recent video per brand to bound Supabase calls
       const latestByBrand = new Map<string, typeof toIndexYT[0]>()
       for (const item of toIndexYT) {
