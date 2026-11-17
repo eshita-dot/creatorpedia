@@ -417,7 +417,7 @@ async function insertCollab(creatorId: string, brandId: string, video: YTVideo, 
   }, { onConflict: 'creator_id,brand_id,collab_date', ignoreDuplicates: true })
 }
 
-// ── Instagram profile + posts via Apify ──────────────────────────────────────
+// ── Instagram profile + posts via Apify (single actor call) ──────────────────
 
 interface IGProfile {
   username: string
@@ -441,7 +441,8 @@ interface IGPost {
   paidPartnership?: boolean
 }
 
-async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null> {
+// instagram-profile-scraper returns profile + latestPosts in one call — one cold start
+async function scrapeInstagram(handle: string): Promise<{ profile: IGProfile | null; posts: IGPost[] }> {
   try {
     const res = await fetch(
       `https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
@@ -449,36 +450,25 @@ async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null>
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usernames: [handle], resultsLimit: 1 }),
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(20000),
       }
     )
-    if (!res.ok) return null
-    const profiles = await res.json() as IGProfile[]
-    return profiles[0] ?? null
+    if (!res.ok) return { profile: null, posts: [] }
+    const items = await res.json() as Array<IGProfile & { latestPosts?: IGPost[] }>
+    const account = items[0]
+    if (!account?.username) return { profile: null, posts: [] }
+    return {
+      profile: {
+        username: account.username,
+        fullName: account.fullName,
+        biography: account.biography,
+        followersCount: account.followersCount,
+        isVerified: account.isVerified,
+      },
+      posts: account.latestPosts ?? [],
+    }
   } catch {
-    return null
-  }
-}
-
-async function scrapeInstagramPosts(handle: string): Promise<IGPost[]> {
-  try {
-    const res = await fetch(
-      `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          directUrls: [`https://www.instagram.com/${handle}/`],
-          resultsType: 'posts',
-          resultsLimit: 8,
-        }),
-        signal: AbortSignal.timeout(15000),
-      }
-    )
-    if (!res.ok) return []
-    return await res.json() as IGPost[]
-  } catch {
-    return []
+    return { profile: null, posts: [] }
   }
 }
 
@@ -578,12 +568,9 @@ export async function POST(req: NextRequest) {
     // 1. Try YouTube handle lookup (1 quota unit)
     let channel = isYouTubeHandleLike ? await lookupByHandle(q) : null
 
-    // 2. If handle-like and no YT match, try Instagram — profile + posts in parallel
+    // 2. If handle-like and no YT match, try Instagram — single actor call gets profile + posts
     if (!channel && isHandleLike && APIFY_TOKEN) {
-      const [igProfile, igPosts] = await Promise.all([
-        scrapeInstagramProfile(q),
-        scrapeInstagramPosts(q),
-      ])
+      const { profile: igProfile, posts: igPosts } = await scrapeInstagram(q)
 
       if (igProfile?.username) {
         const category = inferCategory(igProfile.fullName ?? '', igProfile.biography ?? '')
