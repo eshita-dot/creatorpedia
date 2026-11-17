@@ -586,39 +586,6 @@ export async function POST(req: NextRequest) {
 
     const q = query.trim().replace(/^@/, '')
 
-    // 0. Cache-first: return from Supabase if data is fresh (< 7 days)
-    try {
-      const { data: hit } = await sb
-        .from('creators')
-        .select('id, handle, name, platform, followers_youtube, followers_instagram, avg_views, avg_engagement_rate, updated_at')
-        .ilike('handle', q)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      if (hit && Date.now() - new Date(hit.updated_at).getTime() < 7 * 24 * 60 * 60 * 1000) {
-        const { count: collabCount } = await sb
-          .from('collaborations')
-          .select('*', { count: 'exact', head: true })
-          .eq('creator_id', hit.id)
-
-        return NextResponse.json({
-          handle: hit.handle,
-          name: hit.name,
-          platform: hit.platform,
-          ...(hit.followers_youtube  != null && { followers_youtube:  hit.followers_youtube  }),
-          ...(hit.followers_instagram != null && { followers_instagram: hit.followers_instagram }),
-          ...(hit.avg_views           != null && { avg_views:           hit.avg_views           }),
-          ...(hit.avg_engagement_rate != null && { avg_engagement_rate: hit.avg_engagement_rate }),
-          collab_count: collabCount ?? 0,
-          source: 'cache',
-          cached_at: hit.updated_at,
-        })
-      }
-    } catch {
-      // cache miss or Supabase hiccup — fall through to live scrape
-    }
-
     const isHandleLike = !q.includes(' ') && q.length >= 3
     // YouTube handles don't allow underscores — skip lookup to save time for Instagram-style handles
     const isYouTubeHandleLike = isHandleLike && !q.includes('_')
