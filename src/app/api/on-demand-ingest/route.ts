@@ -187,7 +187,6 @@ async function searchChannel(query: string): Promise<YTChannel | null> {
   const channelId = searchData.items?.[0]?.id?.channelId
   if (!channelId) return null
 
-  // Fetch full channel details
   const detailUrl = new URL('https://www.googleapis.com/youtube/v3/channels')
   detailUrl.searchParams.set('part', 'snippet,statistics')
   detailUrl.searchParams.set('id', channelId)
@@ -206,7 +205,6 @@ async function searchChannel(query: string): Promise<YTChannel | null> {
 }
 
 async function fetchRecentVideos(channelId: string): Promise<YTVideo[]> {
-  // Get uploads playlist ID
   const chUrl = new URL('https://www.googleapis.com/youtube/v3/channels')
   chUrl.searchParams.set('part', 'contentDetails')
   chUrl.searchParams.set('id', channelId)
@@ -216,7 +214,6 @@ async function fetchRecentVideos(channelId: string): Promise<YTVideo[]> {
   const playlistId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
   if (!playlistId) return []
 
-  // Get video IDs
   const plUrl = new URL('https://www.googleapis.com/youtube/v3/playlistItems')
   plUrl.searchParams.set('part', 'contentDetails')
   plUrl.searchParams.set('playlistId', playlistId)
@@ -229,7 +226,6 @@ async function fetchRecentVideos(channelId: string): Promise<YTVideo[]> {
   )
   if (!videoIds.length) return []
 
-  // Get video details + stats
   const vUrl = new URL('https://www.googleapis.com/youtube/v3/videos')
   vUrl.searchParams.set('part', 'snippet,statistics')
   vUrl.searchParams.set('id', videoIds.join(','))
@@ -306,7 +302,7 @@ async function insertCollab(creatorId: string, brandId: string, video: YTVideo, 
   }, { onConflict: 'creator_id,brand_id,collab_date', ignoreDuplicates: true })
 }
 
-// ── Instagram via Apify ───────────────────────────────────────────────────────
+// ── Instagram profile + posts via Apify ──────────────────────────────────────
 
 interface IGProfile {
   username: string
@@ -314,6 +310,19 @@ interface IGProfile {
   biography?: string
   followersCount?: number
   isVerified?: boolean
+}
+
+interface IGPost {
+  shortCode?: string
+  url?: string
+  likesCount?: number
+  commentsCount?: number
+  caption?: string
+  captionText?: string
+  timestamp?: string
+  takenAtTimestamp?: number
+  type?: string
+  videoViewCount?: number
 }
 
 async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null> {
@@ -335,7 +344,59 @@ async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null>
   }
 }
 
-async function upsertInstagramCreator(profile: IGProfile, category: string) {
+async function scrapeInstagramPosts(handle: string): Promise<IGPost[]> {
+  try {
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          directUrls: [`https://www.instagram.com/${handle}/`],
+          resultsType: 'posts',
+          resultsLimit: 20,
+        }),
+        signal: AbortSignal.timeout(8000),
+      }
+    )
+    if (!res.ok) return []
+    return await res.json() as IGPost[]
+  } catch {
+    return []
+  }
+}
+
+function getPostCaption(post: IGPost): string {
+  return post.caption ?? post.captionText ?? ''
+}
+
+function getPostDate(post: IGPost): string {
+  if (post.timestamp) return post.timestamp.substring(0, 10)
+  if (post.takenAtTimestamp) return new Date(post.takenAtTimestamp * 1000).toISOString().substring(0, 10)
+  return new Date().toISOString().substring(0, 10)
+}
+
+function calcIGEngagementRate(posts: IGPost[], followers: number): number | undefined {
+  if (!followers || !posts.length) return undefined
+  const valid = posts.filter(p => (p.likesCount ?? 0) > 0 || (p.commentsCount ?? 0) > 0)
+  if (!valid.length) return undefined
+  const avgInteractions = valid.reduce((s, p) => s + (p.likesCount ?? 0) + (p.commentsCount ?? 0), 0) / valid.length
+  return parseFloat((avgInteractions / followers * 100).toFixed(2))
+}
+
+function calcIGAvgViews(posts: IGPost[]): number | undefined {
+  const videoPosts = posts.filter(p =>
+    (p.type === 'Video' || p.type === 'Reel') && (p.videoViewCount ?? 0) > 0
+  )
+  if (!videoPosts.length) return undefined
+  return Math.round(videoPosts.reduce((s, p) => s + (p.videoViewCount ?? 0), 0) / videoPosts.length)
+}
+
+async function upsertInstagramCreator(
+  profile: IGProfile,
+  category: string,
+  stats: { avg_engagement_rate?: number; avg_views?: number } = {}
+) {
   const followers = profile.followersCount ?? 0
   const tier =
     followers >= 1_000_000 ? 'mega' :
@@ -356,6 +417,8 @@ async function upsertInstagramCreator(profile: IGProfile, category: string) {
       languages: ['Hindi', 'English'],
       followers_instagram: followers,
       pricing_tier: tier,
+      avg_engagement_rate: stats.avg_engagement_rate ?? null,
+      avg_views: stats.avg_views ?? null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'handle,platform' })
     .select('id')
@@ -363,6 +426,24 @@ async function upsertInstagramCreator(profile: IGProfile, category: string) {
 
   if (error) { console.error('[on-demand] IG upsert:', error.message); return null }
   return data?.id as string | null
+}
+
+async function insertIGCollab(
+  creatorId: string, brandId: string, post: IGPost, tags: string[], dealType: string
+) {
+  const evidenceUrl = post.shortCode
+    ? `https://www.instagram.com/p/${post.shortCode}/`
+    : post.url
+  await sb.from('collaborations').upsert({
+    creator_id: creatorId,
+    brand_id: brandId,
+    collab_date: getPostDate(post),
+    source: 'instagram_post',
+    deal_type: dealType,
+    evidence_url: evidenceUrl,
+    disclosure_tags: tags,
+    notes: getPostCaption(post).substring(0, 200),
+  }, { onConflict: 'creator_id,brand_id,collab_date', ignoreDuplicates: true })
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
@@ -375,27 +456,63 @@ export async function POST(req: NextRequest) {
     }
 
     const q = query.trim().replace(/^@/, '')
-
-    // Queries without spaces are likely handles — try platform-specific lookups.
-    // Queries with spaces are name searches — YouTube search.list only.
     const isHandleLike = !q.includes(' ') && q.length >= 3
 
     // 1. Try YouTube handle lookup (1 quota unit)
     let channel = isHandleLike ? await lookupByHandle(q) : null
 
-    // 2. If handle not on YouTube and query looks like a handle, try Instagram via Apify
+    // 2. If not on YouTube and handle-like, try Instagram — profile + posts in parallel
     if (!channel && isHandleLike && APIFY_TOKEN) {
-      const igProfile = await scrapeInstagramProfile(q)
+      const [igProfile, igPosts] = await Promise.all([
+        scrapeInstagramProfile(q),
+        scrapeInstagramPosts(q),
+      ])
+
       if (igProfile?.username) {
         const category = inferCategory(igProfile.fullName ?? '', igProfile.biography ?? '')
-        const creatorId = await upsertInstagramCreator(igProfile, category)
+        const followers = igProfile.followersCount ?? 0
+        const avg_engagement_rate = calcIGEngagementRate(igPosts, followers)
+        const avg_views = calcIGAvgViews(igPosts)
+
+        const creatorId = await upsertInstagramCreator(igProfile, category, { avg_engagement_rate, avg_views })
         if (!creatorId) return NextResponse.json({ error: 'Failed to index creator' }, { status: 500 })
+
+        // Extract brand mentions across all posts
+        type BrandCollab = {
+          brand: { name: string; category: string; is_d2c: boolean }
+          post: IGPost; tags: string[]; dealType: string
+        }
+        const toIndex: BrandCollab[] = []
+        for (const post of igPosts) {
+          const caption = getPostCaption(post)
+          if (!caption) continue
+          const brands = extractBrandMentions(caption)
+          if (!brands.length) continue
+          const tags = extractDisclosureTags(caption)
+          const dealType = inferDealType(caption)
+          for (const brand of brands) toIndex.push({ brand, post, tags, dealType })
+        }
+
+        // Batch: upsert unique brands in parallel, then collabs in parallel
+        if (toIndex.length > 0) {
+          const uniqueBrands = [...new Map(toIndex.map(x => [x.brand.name, x.brand])).values()]
+          const brandIds = await Promise.all(uniqueBrands.map(b => upsertBrand(b)))
+          const brandIdMap = new Map(uniqueBrands.map((b, i) => [b.name, brandIds[i]]))
+          await Promise.all(toIndex.map(x => {
+            const brandId = brandIdMap.get(x.brand.name)
+            if (!brandId) return
+            return insertIGCollab(creatorId, brandId, x.post, x.tags, x.dealType)
+          }))
+        }
+
         return NextResponse.json({
           handle: igProfile.username,
           name: igProfile.fullName || igProfile.username,
           platform: 'instagram',
-          followers_instagram: igProfile.followersCount,
-          collab_count: 0,
+          followers_instagram: followers,
+          avg_engagement_rate,
+          avg_views,
+          collab_count: toIndex.length,
         })
       }
     }
@@ -421,16 +538,15 @@ export async function POST(req: NextRequest) {
         , 0) / statsVideos.length * 100).toFixed(2))
       : undefined
 
-    // 5. Infer category from channel content
     const category = inferCategory(channel.title, channel.description)
 
-    // 6. Upsert creator
+    // 5. Upsert creator
     const creatorId = await upsertCreator(channel, category, { avg_views, avg_engagement_rate })
     if (!creatorId) {
       return NextResponse.json({ error: 'Failed to index creator' }, { status: 500 })
     }
 
-    // 7. Extract brand mentions + upsert collabs
+    // 6. Extract brand mentions from video titles + descriptions, upsert collabs
     let collabCount = 0
     for (const video of videos) {
       const fullText = video.title + ' ' + video.description
