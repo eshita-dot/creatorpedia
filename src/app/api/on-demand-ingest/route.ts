@@ -342,7 +342,7 @@ async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null>
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usernames: [handle], resultsLimit: 1 }),
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(15000),
       }
     )
     if (!res.ok) return null
