@@ -156,95 +156,107 @@ interface YTVideo {
 }
 
 async function lookupByHandle(handle: string): Promise<YTChannel | null> {
-  const url = new URL('https://www.googleapis.com/youtube/v3/channels')
-  url.searchParams.set('part', 'snippet,statistics')
-  url.searchParams.set('forHandle', handle)
-  url.searchParams.set('key', YT_KEY)
-  const res = await fetch(url.toString())
-  const data = await res.json()
-  const item = data.items?.[0]
-  if (!item) return null
-  return {
-    channelId: item.id,
-    title: item.snippet.title,
-    description: item.snippet.description ?? '',
-    subscriberCount: item.statistics.subscriberCount ?? '0',
-    handle: (item.snippet.customUrl ?? item.id).replace('@', ''),
+  try {
+    const url = new URL('https://www.googleapis.com/youtube/v3/channels')
+    url.searchParams.set('part', 'snippet,statistics')
+    url.searchParams.set('forHandle', handle)
+    url.searchParams.set('key', YT_KEY)
+    const res = await fetch(url.toString(), { signal: AbortSignal.timeout(3000) })
+    const data = await res.json()
+    const item = data.items?.[0]
+    if (!item) return null
+    return {
+      channelId: item.id,
+      title: item.snippet.title,
+      description: item.snippet.description ?? '',
+      subscriberCount: item.statistics.subscriberCount ?? '0',
+      handle: (item.snippet.customUrl ?? item.id).replace('@', ''),
+    }
+  } catch {
+    return null
   }
 }
 
 async function searchChannel(query: string): Promise<YTChannel | null> {
   // search.list costs 100 quota units — only used as fallback
-  const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search')
-  searchUrl.searchParams.set('part', 'snippet')
-  searchUrl.searchParams.set('q', query)
-  searchUrl.searchParams.set('type', 'channel')
-  searchUrl.searchParams.set('regionCode', 'IN')
-  searchUrl.searchParams.set('maxResults', '1')
-  searchUrl.searchParams.set('key', YT_KEY)
-  const searchRes = await fetch(searchUrl.toString())
-  const searchData = await searchRes.json()
-  const channelId = searchData.items?.[0]?.id?.channelId
-  if (!channelId) return null
+  try {
+    const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search')
+    searchUrl.searchParams.set('part', 'snippet')
+    searchUrl.searchParams.set('q', query)
+    searchUrl.searchParams.set('type', 'channel')
+    searchUrl.searchParams.set('regionCode', 'IN')
+    searchUrl.searchParams.set('maxResults', '1')
+    searchUrl.searchParams.set('key', YT_KEY)
+    const searchRes = await fetch(searchUrl.toString(), { signal: AbortSignal.timeout(3000) })
+    const searchData = await searchRes.json()
+    const channelId = searchData.items?.[0]?.id?.channelId
+    if (!channelId) return null
 
-  const detailUrl = new URL('https://www.googleapis.com/youtube/v3/channels')
-  detailUrl.searchParams.set('part', 'snippet,statistics')
-  detailUrl.searchParams.set('id', channelId)
-  detailUrl.searchParams.set('key', YT_KEY)
-  const detailRes = await fetch(detailUrl.toString())
-  const detailData = await detailRes.json()
-  const item = detailData.items?.[0]
-  if (!item) return null
-  return {
-    channelId: item.id,
-    title: item.snippet.title,
-    description: item.snippet.description ?? '',
-    subscriberCount: item.statistics.subscriberCount ?? '0',
-    handle: (item.snippet.customUrl ?? item.id).replace('@', ''),
+    const detailUrl = new URL('https://www.googleapis.com/youtube/v3/channels')
+    detailUrl.searchParams.set('part', 'snippet,statistics')
+    detailUrl.searchParams.set('id', channelId)
+    detailUrl.searchParams.set('key', YT_KEY)
+    const detailRes = await fetch(detailUrl.toString(), { signal: AbortSignal.timeout(3000) })
+    const detailData = await detailRes.json()
+    const item = detailData.items?.[0]
+    if (!item) return null
+    return {
+      channelId: item.id,
+      title: item.snippet.title,
+      description: item.snippet.description ?? '',
+      subscriberCount: item.statistics.subscriberCount ?? '0',
+      handle: (item.snippet.customUrl ?? item.id).replace('@', ''),
+    }
+  } catch {
+    return null
   }
 }
 
 async function fetchRecentVideos(channelId: string): Promise<YTVideo[]> {
-  const chUrl = new URL('https://www.googleapis.com/youtube/v3/channels')
-  chUrl.searchParams.set('part', 'contentDetails')
-  chUrl.searchParams.set('id', channelId)
-  chUrl.searchParams.set('key', YT_KEY)
-  const chRes = await fetch(chUrl.toString())
-  const chData = await chRes.json()
-  const playlistId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
-  if (!playlistId) return []
+  try {
+    const chUrl = new URL('https://www.googleapis.com/youtube/v3/channels')
+    chUrl.searchParams.set('part', 'contentDetails')
+    chUrl.searchParams.set('id', channelId)
+    chUrl.searchParams.set('key', YT_KEY)
+    const chRes = await fetch(chUrl.toString(), { signal: AbortSignal.timeout(3000) })
+    const chData = await chRes.json()
+    const playlistId = chData.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
+    if (!playlistId) return []
 
-  const plUrl = new URL('https://www.googleapis.com/youtube/v3/playlistItems')
-  plUrl.searchParams.set('part', 'contentDetails')
-  plUrl.searchParams.set('playlistId', playlistId)
-  plUrl.searchParams.set('maxResults', '12')
-  plUrl.searchParams.set('key', YT_KEY)
-  const plRes = await fetch(plUrl.toString())
-  const plData = await plRes.json()
-  const videoIds: string[] = (plData.items ?? []).map(
-    (i: { contentDetails: { videoId: string } }) => i.contentDetails.videoId
-  )
-  if (!videoIds.length) return []
+    const plUrl = new URL('https://www.googleapis.com/youtube/v3/playlistItems')
+    plUrl.searchParams.set('part', 'contentDetails')
+    plUrl.searchParams.set('playlistId', playlistId)
+    plUrl.searchParams.set('maxResults', '12')
+    plUrl.searchParams.set('key', YT_KEY)
+    const plRes = await fetch(plUrl.toString(), { signal: AbortSignal.timeout(3000) })
+    const plData = await plRes.json()
+    const videoIds: string[] = (plData.items ?? []).map(
+      (i: { contentDetails: { videoId: string } }) => i.contentDetails.videoId
+    )
+    if (!videoIds.length) return []
 
-  const vUrl = new URL('https://www.googleapis.com/youtube/v3/videos')
-  vUrl.searchParams.set('part', 'snippet,statistics')
-  vUrl.searchParams.set('id', videoIds.join(','))
-  vUrl.searchParams.set('key', YT_KEY)
-  const vRes = await fetch(vUrl.toString())
-  const vData = await vRes.json()
-  return (vData.items ?? []).map((item: {
-    id: string
-    snippet: { title: string; description: string; publishedAt: string }
-    statistics: { viewCount?: string; likeCount?: string; commentCount?: string }
-  }) => ({
-    videoId: item.id,
-    title: item.snippet.title,
-    description: item.snippet.description,
-    publishedAt: item.snippet.publishedAt,
-    viewCount: item.statistics.viewCount ? parseInt(item.statistics.viewCount, 10) : undefined,
-    likeCount: item.statistics.likeCount ? parseInt(item.statistics.likeCount, 10) : undefined,
-    commentCount: item.statistics.commentCount ? parseInt(item.statistics.commentCount, 10) : undefined,
-  }))
+    const vUrl = new URL('https://www.googleapis.com/youtube/v3/videos')
+    vUrl.searchParams.set('part', 'snippet,statistics')
+    vUrl.searchParams.set('id', videoIds.join(','))
+    vUrl.searchParams.set('key', YT_KEY)
+    const vRes = await fetch(vUrl.toString(), { signal: AbortSignal.timeout(3000) })
+    const vData = await vRes.json()
+    return (vData.items ?? []).map((item: {
+      id: string
+      snippet: { title: string; description: string; publishedAt: string }
+      statistics: { viewCount?: string; likeCount?: string; commentCount?: string }
+    }) => ({
+      videoId: item.id,
+      title: item.snippet.title,
+      description: item.snippet.description,
+      publishedAt: item.snippet.publishedAt,
+      viewCount: item.statistics.viewCount ? parseInt(item.statistics.viewCount, 10) : undefined,
+      likeCount: item.statistics.likeCount ? parseInt(item.statistics.likeCount, 10) : undefined,
+      commentCount: item.statistics.commentCount ? parseInt(item.statistics.commentCount, 10) : undefined,
+    }))
+  } catch {
+    return []
+  }
 }
 
 // ── Supabase helpers ──────────────────────────────────────────────────────────
@@ -462,12 +474,7 @@ export async function POST(req: NextRequest) {
     // 1. Try YouTube handle lookup (1 quota unit)
     let channel = isHandleLike ? await lookupByHandle(q) : null
 
-    // 2. Try YouTube search (100 quota units) before Instagram — avoids wasting 7s on IG for YT creators
-    if (!channel) {
-      channel = await searchChannel(q)
-    }
-
-    // 3. If YouTube has no match and handle-like, try Instagram — profile + posts in parallel
+    // 2. If handle-like and no YT match, try Instagram — profile + posts in parallel
     if (!channel && isHandleLike && APIFY_TOKEN) {
       const [igProfile, igPosts] = await Promise.all([
         scrapeInstagramProfile(q),
@@ -525,6 +532,11 @@ export async function POST(req: NextRequest) {
           collab_count: toIndex.length,
         })
       }
+    }
+
+    // 3. Fall back to YouTube channel search (100 quota units) — handles name queries too
+    if (!channel) {
+      channel = await searchChannel(q)
     }
 
     if (!channel) {
