@@ -464,9 +464,13 @@ export async function POST(req: NextRequest) {
 
     const q = query.trim().replace(/^@/, '')
     const isHandleLike = !q.includes(' ') && q.length >= 3
+    const t0 = Date.now()
+    const tlog = (msg: string) => console.log(`[t+${Date.now()-t0}ms] ${msg}`)
 
     // 1. Try YouTube handle lookup (1 quota unit)
+    tlog('start lookupByHandle')
     let channel = isHandleLike ? await lookupByHandle(q) : null
+    tlog(`lookupByHandle done channel=${!!channel}`)
 
     // 2. If handle-like and no YT match, try Instagram — profile + posts in parallel
     if (!channel && isHandleLike && APIFY_TOKEN) {
@@ -544,7 +548,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Fetch recent videos + compute stats
+    tlog('start fetchRecentVideos')
     const videos = await fetchRecentVideos(channel.channelId)
+    tlog(`fetchRecentVideos done videos=${videos.length}`)
     const statsVideos = videos.filter(v => v.viewCount && v.viewCount > 0)
     const avg_views = statsVideos.length > 0
       ? Math.round(statsVideos.reduce((s, v) => s + (v.viewCount ?? 0), 0) / statsVideos.length)
@@ -558,7 +564,9 @@ export async function POST(req: NextRequest) {
     const category = inferCategory(channel.title, channel.description)
 
     // 5. Upsert creator
+    tlog('start upsertCreator')
     const creatorId = await upsertCreator(channel, category, { avg_views, avg_engagement_rate })
+    tlog(`upsertCreator done id=${creatorId}`)
     if (!creatorId) {
       return NextResponse.json({ error: 'Failed to index creator' }, { status: 500 })
     }
