@@ -342,7 +342,7 @@ async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null>
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usernames: [handle], resultsLimit: 1 }),
-        signal: AbortSignal.timeout(7000),
+        signal: AbortSignal.timeout(10000),
       }
     )
     if (!res.ok) return null
@@ -365,7 +365,7 @@ async function scrapeInstagramPosts(handle: string): Promise<IGPost[]> {
           resultsType: 'posts',
           resultsLimit: 8,
         }),
-        signal: AbortSignal.timeout(7000),
+        signal: AbortSignal.timeout(15000),
       }
     )
     if (!res.ok) return []
@@ -484,7 +484,7 @@ export async function POST(req: NextRequest) {
 
         const creatorId = await Promise.race([
           upsertInstagramCreator(igProfile, category, { avg_engagement_rate, avg_views }),
-          new Promise<null>(resolve => setTimeout(() => resolve(null), 10000)),
+          new Promise<null>(resolve => setTimeout(() => resolve(null), 4000)),
         ])
 
         // Extract brand mentions across all posts
