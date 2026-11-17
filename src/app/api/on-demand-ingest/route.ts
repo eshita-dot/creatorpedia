@@ -464,13 +464,8 @@ export async function POST(req: NextRequest) {
 
     const q = query.trim().replace(/^@/, '')
     const isHandleLike = !q.includes(' ') && q.length >= 3
-    const t0 = Date.now()
-    const tlog = (msg: string) => console.log(`[t+${Date.now()-t0}ms] ${msg}`)
-
     // 1. Try YouTube handle lookup (1 quota unit)
-    tlog('start lookupByHandle')
     let channel = isHandleLike ? await lookupByHandle(q) : null
-    tlog(`lookupByHandle done channel=${!!channel}`)
 
     // 2. If handle-like and no YT match, try Instagram — profile + posts in parallel
     if (!channel && isHandleLike && APIFY_TOKEN) {
@@ -508,7 +503,7 @@ export async function POST(req: NextRequest) {
           for (const brand of brands) toIndex.push({ brand, post, tags, dealType })
         }
 
-        // Deduplicate to latest post per brand, then batch upsert
+        // Deduplicate to latest post per brand, then batch upsert with 5s budget
         if (toIndex.length > 0) {
           const latestIG = new Map<string, typeof toIndex[0]>()
           for (const item of toIndex) {
@@ -517,13 +512,19 @@ export async function POST(req: NextRequest) {
             if (!ex || itemDate > getPostDate(ex.post)) latestIG.set(item.brand.name, item)
           }
           const dedupedIG = [...latestIG.values()]
-          const brandIds = await Promise.all(dedupedIG.map(x => upsertBrand(x.brand)))
-          const brandIdMap = new Map(dedupedIG.map((x, i) => [x.brand.name, brandIds[i]]))
-          await Promise.all(dedupedIG.map(x => {
-            const brandId = brandIdMap.get(x.brand.name)
-            if (!brandId) return
-            return insertIGCollab(creatorId, brandId, x.post, x.tags, x.dealType)
-          }))
+          const igBudget = new Promise<void>(resolve => setTimeout(resolve, 5000))
+          await Promise.race([
+            (async () => {
+              const brandIds = await Promise.all(dedupedIG.map(x => upsertBrand(x.brand)))
+              const brandIdMap = new Map(dedupedIG.map((x, i) => [x.brand.name, brandIds[i]]))
+              await Promise.all(dedupedIG.map(x => {
+                const brandId = brandIdMap.get(x.brand.name)
+                if (!brandId) return
+                return insertIGCollab(creatorId, brandId, x.post, x.tags, x.dealType)
+              }))
+            })(),
+            igBudget,
+          ])
         }
 
         return NextResponse.json({
@@ -548,9 +549,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Fetch recent videos + compute stats
-    tlog('start fetchRecentVideos')
     const videos = await fetchRecentVideos(channel.channelId)
-    tlog(`fetchRecentVideos done videos=${videos.length}`)
     const statsVideos = videos.filter(v => v.viewCount && v.viewCount > 0)
     const avg_views = statsVideos.length > 0
       ? Math.round(statsVideos.reduce((s, v) => s + (v.viewCount ?? 0), 0) / statsVideos.length)
@@ -564,9 +563,7 @@ export async function POST(req: NextRequest) {
     const category = inferCategory(channel.title, channel.description)
 
     // 5. Upsert creator
-    tlog('start upsertCreator')
     const creatorId = await upsertCreator(channel, category, { avg_views, avg_engagement_rate })
-    tlog(`upsertCreator done id=${creatorId}`)
     if (!creatorId) {
       return NextResponse.json({ error: 'Failed to index creator' }, { status: 500 })
     }
@@ -593,14 +590,21 @@ export async function POST(req: NextRequest) {
       }
       const deduped = [...latestByBrand.values()]
 
-      const brandIds = await Promise.all(deduped.map(x => upsertBrand(x.brand)))
-      const brandIdMap = new Map(deduped.map((x, i) => [x.brand.name, brandIds[i]]))
-      await Promise.all(deduped.map(x => {
-        const brandId = brandIdMap.get(x.brand.name)
-        if (!brandId) return
-        collabCount++
-        return insertCollab(creatorId, brandId, x.video, x.tags, x.dealType)
-      }))
+      // 5s budget for all collab writes — if Supabase hangs, we still return creator data
+      const collabBudget = new Promise<void>(resolve => setTimeout(resolve, 5000))
+      await Promise.race([
+        (async () => {
+          const brandIds = await Promise.all(deduped.map(x => upsertBrand(x.brand)))
+          const brandIdMap = new Map(deduped.map((x, i) => [x.brand.name, brandIds[i]]))
+          await Promise.all(deduped.map(x => {
+            const brandId = brandIdMap.get(x.brand.name)
+            if (!brandId) return
+            collabCount++
+            return insertCollab(creatorId, brandId, x.video, x.tags, x.dealType)
+          }))
+        })(),
+        collabBudget,
+      ])
     }
 
     return NextResponse.json({
