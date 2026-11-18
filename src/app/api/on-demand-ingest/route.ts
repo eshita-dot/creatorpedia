@@ -7,7 +7,7 @@ const sb = createClient(
 )
 const YT_KEY = process.env.YOUTUBE_API_KEY!
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY!
-const IG_API_HOST = 'instagram-scraper-api2.p.rapidapi.com'
+const IG_API_HOST = 'instagram-public-bulk-scraper.p.rapidapi.com'
 
 // ── Disclosure detection ──────────────────────────────────────────────────────
 
@@ -443,26 +443,26 @@ interface IGPost {
 
 async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null> {
   try {
-    const res = await fetch(
-      `https://${IG_API_HOST}/v1/info?username_or_id_or_url=${encodeURIComponent(handle)}`,
-      {
-        headers: {
-          'X-RapidAPI-Key': RAPIDAPI_KEY,
-          'X-RapidAPI-Host': IG_API_HOST,
-        },
-        signal: AbortSignal.timeout(8000),
-      }
-    )
+    const url = new URL(`https://${IG_API_HOST}/v1/user_info`)
+    url.searchParams.set('username_or_id', handle)
+    const res = await fetch(url.toString(), {
+      headers: {
+        'x-rapidapi-key': RAPIDAPI_KEY,
+        'x-rapidapi-host': IG_API_HOST,
+      },
+      signal: AbortSignal.timeout(8000),
+    })
     if (!res.ok) return null
     const json = await res.json()
-    const u = json?.data?.user
+    // APIall always wraps response in json.data
+    const u = json?.data ?? json
     if (!u?.username) return null
     return {
       username: u.username,
-      fullName: u.full_name,
-      biography: u.biography,
-      followersCount: u.follower_count,
-      isVerified: u.is_verified,
+      fullName: u.full_name ?? u.fullName,
+      biography: u.biography ?? u.bio,
+      followersCount: u.follower_count ?? u.followers_count ?? u.followers ?? 0,
+      isVerified: u.is_verified ?? u.verified ?? false,
     }
   } catch {
     return null
@@ -471,41 +471,42 @@ async function scrapeInstagramProfile(handle: string): Promise<IGProfile | null>
 
 async function scrapeInstagramPosts(handle: string): Promise<IGPost[]> {
   try {
-    const res = await fetch(
-      `https://${IG_API_HOST}/v1.2/posts?username_or_id_or_url=${encodeURIComponent(handle)}`,
-      {
-        headers: {
-          'X-RapidAPI-Key': RAPIDAPI_KEY,
-          'X-RapidAPI-Host': IG_API_HOST,
-        },
-        signal: AbortSignal.timeout(8000),
-      }
-    )
+    const url = new URL(`https://${IG_API_HOST}/v1/user_posts`)
+    url.searchParams.set('username_or_id', handle)
+    url.searchParams.set('count', '12')
+    const res = await fetch(url.toString(), {
+      headers: {
+        'x-rapidapi-key': RAPIDAPI_KEY,
+        'x-rapidapi-host': IG_API_HOST,
+      },
+      signal: AbortSignal.timeout(8000),
+    })
     if (!res.ok) return []
     const json = await res.json()
+    // APIall always wraps response in json.data; posts may be in data.items or data directly
+    const raw = json?.data?.items ?? json?.data ?? json?.items ?? json
     const items: Array<{
-      code?: string
-      taken_at?: number
-      like_count?: number
-      comment_count?: number
-      play_count?: number
-      view_count?: number
-      caption?: { text?: string }
+      code?: string; shortcode?: string
+      taken_at?: number; timestamp?: number
+      like_count?: number; likes_count?: number; likes?: number
+      comment_count?: number; comments_count?: number
+      play_count?: number; view_count?: number; video_view_count?: number
+      caption?: string | { text?: string }
       media_type?: number
       paid_partnership?: boolean
-      thumbnail_url?: string
-    }> = json?.data?.items ?? []
+      thumbnail_url?: string; image_url?: string
+    }> = Array.isArray(raw) ? raw : []
     return items.map(p => ({
-      shortCode: p.code,
-      takenAtTimestamp: p.taken_at,
-      likesCount: p.like_count,
-      commentsCount: p.comment_count,
-      videoViewCount: p.play_count ?? p.view_count,
-      caption: p.caption?.text,
+      shortCode: p.code ?? p.shortcode,
+      takenAtTimestamp: p.taken_at ?? p.timestamp,
+      likesCount: p.like_count ?? p.likes_count ?? (typeof p.likes === 'number' ? p.likes : 0),
+      commentsCount: p.comment_count ?? p.comments_count ?? 0,
+      videoViewCount: p.play_count ?? p.view_count ?? p.video_view_count,
+      caption: typeof p.caption === 'string' ? p.caption : p.caption?.text,
       // media_type: 1=Photo, 2=Video, 8=Carousel
       type: p.media_type === 2 ? 'Video' : p.media_type === 8 ? 'Sidecar' : 'Image',
       paidPartnership: p.paid_partnership,
-      url: p.thumbnail_url,
+      url: p.thumbnail_url ?? p.image_url,
     }))
   } catch {
     return []
