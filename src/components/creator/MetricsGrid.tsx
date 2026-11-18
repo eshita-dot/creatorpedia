@@ -23,29 +23,40 @@ interface MetricsGridProps {
 }
 
 export function MetricsGrid({ creator }: MetricsGridProps) {
+  const isYT = creator.platform === 'youtube' || creator.platform === 'both'
+  const isIG = creator.platform === 'instagram' || creator.platform === 'both'
+
   const metrics = [
     {
       icon: <IgIcon />,
       label: 'Instagram Followers',
       value: formatFollowers(creator.followers_instagram),
+      note: null,
       show: !!creator.followers_instagram,
     },
     {
       icon: <YtIcon />,
       label: 'YouTube Subscribers',
       value: formatFollowers(creator.followers_youtube),
+      note: null,
       show: !!creator.followers_youtube,
     },
     {
       icon: <TrendingUp className="size-4 text-brand-600" />,
       label: 'Avg Engagement Rate',
       value: `${creator.avg_engagement_rate}%`,
+      note: isYT
+        ? '(likes + comments) / views · last 12 videos'
+        : '(likes + comments) / followers · last 12 posts',
       show: creator.avg_engagement_rate != null,
     },
     {
       icon: <Play className="size-4 text-brand-600" />,
       label: 'Avg Views / Video',
       value: formatFollowers(creator.avg_views),
+      note: isYT
+        ? 'mean viewCount · last 12 videos'
+        : 'reels & videos only · last 12 posts',
       show: creator.avg_views != null,
     },
   ].filter((m) => m.show)
@@ -60,6 +71,9 @@ export function MetricsGrid({ creator }: MetricsGridProps) {
           {m.icon}
           <span className="text-lg font-bold">{m.value}</span>
           <span className="text-[11px] text-muted-foreground">{m.label}</span>
+          {m.note && (
+            <span className="text-[10px] text-muted-foreground/60 leading-tight">{m.note}</span>
+          )}
         </div>
       ))}
     </div>
