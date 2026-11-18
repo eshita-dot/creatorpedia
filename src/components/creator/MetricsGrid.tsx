@@ -39,14 +39,14 @@ export function MetricsGrid({ creator }: MetricsGridProps) {
     {
       icon: <TrendingUp className="size-4 text-brand-600" />,
       label: 'Avg Engagement Rate',
-      value: creator.avg_engagement_rate ? `${creator.avg_engagement_rate}%` : '—',
-      show: true,
+      value: `${creator.avg_engagement_rate}%`,
+      show: creator.avg_engagement_rate != null,
     },
     {
       icon: <Play className="size-4 text-brand-600" />,
       label: 'Avg Views / Video',
       value: formatFollowers(creator.avg_views),
-      show: true,
+      show: creator.avg_views != null,
     },
   ].filter((m) => m.show)
 
