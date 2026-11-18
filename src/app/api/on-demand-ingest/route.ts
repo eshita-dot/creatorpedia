@@ -703,10 +703,11 @@ export async function POST(req: NextRequest) {
     const avg_views = statsVideos.length > 0
       ? Math.round(statsVideos.reduce((s, v) => s + (v.viewCount ?? 0), 0) / statsVideos.length)
       : undefined
-    const avg_engagement_rate = statsVideos.length > 0
-      ? parseFloat((statsVideos.reduce((s, v) =>
-          s + ((v.likeCount ?? 0) + (v.commentCount ?? 0)) / (v.viewCount ?? 1)
-        , 0) / statsVideos.length * 100).toFixed(2))
+    // Total-based ER: (total likes + comments) / total views × 100 — avoids inflation from small outlier videos
+    const totalViews = statsVideos.reduce((s, v) => s + (v.viewCount ?? 0), 0)
+    const totalInteractions = statsVideos.reduce((s, v) => s + (v.likeCount ?? 0) + (v.commentCount ?? 0), 0)
+    const avg_engagement_rate = totalViews > 0
+      ? parseFloat((totalInteractions / totalViews * 100).toFixed(2))
       : undefined
 
     const category = inferCategory(channel.title, channel.description)
