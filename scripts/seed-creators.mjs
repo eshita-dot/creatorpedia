@@ -151,7 +151,7 @@ const CREATORS = [
   { handle: 'AmitBhadana',          category: 'entertainment' },
   { handle: 'ScoopWhoop',           category: 'entertainment' },
   { handle: 'FilterCopy',           category: 'entertainment' },
-  { handle: 'TVFMedia',             category: 'entertainment' },
+  { handle: 'theviralfever',        category: 'entertainment' },
   { handle: 'NikhilBanerjee',       category: 'entertainment' },
   { handle: 'SiddharthBatra',       category: 'entertainment' },
   { handle: 'SaurabhGhadge',        category: 'entertainment' },
@@ -160,7 +160,7 @@ const CREATORS = [
 
   // ── Gaming ────────────────────────────────────────────────────────────────
   { handle: 'MortaL',               category: 'gaming' },
-  { handle: 'DynamicsGaming',       category: 'gaming' },
+  { handle: 'DynamoGaming',         category: 'gaming' },
   { handle: 'GyanSujan',            category: 'gaming' },
   { handle: 'SouLWaTeRz',          category: 'gaming' },
   { handle: 'NoobYT',               category: 'gaming' },
