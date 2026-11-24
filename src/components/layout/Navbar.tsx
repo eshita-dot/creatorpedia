@@ -46,10 +46,10 @@ export function Navbar() {
             Compare Brands
           </Link>
           <Link
-            href="/onboard"
-            className="rounded-lg border border-brand-500/30 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 transition-colors"
+            href="/early-access"
+            className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 transition-colors"
           >
-            List Your Profile
+            Early Access
           </Link>
         </div>
       </div>

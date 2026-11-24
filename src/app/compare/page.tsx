@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 import { formatFollowers } from '@/lib/mock-data'
 import { BrandPicker } from './BrandPicker'
 import { ExportButton } from './ExportButton'
+import { PaywallBanner } from '@/components/subscription/PaywallBanner'
+import { isSubscribed } from '@/lib/subscription'
 import type { Brand, Creator } from '@/types'
 
 interface ComparePageProps {
@@ -42,8 +44,10 @@ type CreatorRow = Creator & {
   maxFollowers: number
 }
 
+const FREE_ROWS = 2 // rows visible without subscription
+
 export default async function ComparePage({ searchParams }: ComparePageProps) {
-  const p = await searchParams
+  const [p, subscribed] = await Promise.all([searchParams, isSubscribed()])
   const rawSlugs = (p.brands ?? '').split(',').map(s => s.trim()).filter(Boolean).slice(0, 4)
 
   const supabase = await createClient()
@@ -232,7 +236,7 @@ export default async function ComparePage({ searchParams }: ComparePageProps) {
                   </span>
                 )}
               </h2>
-              {allCreators.length > 0 && (
+              {allCreators.length > 0 && subscribed && (
                 <ExportButton rows={exportRows} brandNames={brands.map(b => b.name)} />
               )}
             </div>
@@ -260,7 +264,7 @@ export default async function ComparePage({ searchParams }: ComparePageProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {allCreators.map((creator) => {
+                    {(subscribed ? allCreators : allCreators.slice(0, FREE_ROWS)).map((creator) => {
                       const isShared = creator.brandIndices.length > 1
                       return (
                         <tr
@@ -344,6 +348,12 @@ export default async function ComparePage({ searchParams }: ComparePageProps) {
               </div>
             )}
           </div>
+
+          {!subscribed && allCreators.length > FREE_ROWS && (
+            <div className="mt-4">
+              <PaywallBanner hiddenCount={allCreators.length - FREE_ROWS} noun="creators" />
+            </div>
+          )}
 
           <p className="mt-4 text-xs text-muted-foreground">
             Data sourced from ASCI-mandated disclosures (#ad, #sponsored) and YouTube API. Shared creators are highlighted.

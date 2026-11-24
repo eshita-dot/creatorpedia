@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { formatFollowers } from '@/lib/mock-data'
+import { PaywallBanner } from '@/components/subscription/PaywallBanner'
+import { isSubscribed } from '@/lib/subscription'
 import type { Creator, Brand } from '@/types'
 
 interface BrandPageProps {
@@ -46,10 +48,12 @@ type CreatorWithBrandCollabs = Creator & {
   is_confirmed: boolean
 }
 
+const FREE_CREATORS = 3
+
 export default async function BrandPage({ params }: BrandPageProps) {
   const { name: rawSlug } = await params
   const searchTerm = rawSlug.replace(/-/g, ' ')
-  const supabase = await createClient()
+  const [supabase, subscribed] = await Promise.all([createClient(), isSubscribed()])
 
   const { data: brandRows } = await supabase
     .from('brands')
@@ -280,7 +284,7 @@ export default async function BrandPage({ params }: BrandPageProps) {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {creators.map((creator) => (
+          {(subscribed ? creators : creators.slice(0, FREE_CREATORS)).map((creator) => (
             <Link
               key={creator.id}
               href={`/creator/${creator.handle}`}
@@ -366,6 +370,12 @@ export default async function BrandPage({ params }: BrandPageProps) {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {!subscribed && creators.length > FREE_CREATORS && (
+        <div className="mt-4">
+          <PaywallBanner hiddenCount={creators.length - FREE_CREATORS} noun="creators" />
         </div>
       )}
 
