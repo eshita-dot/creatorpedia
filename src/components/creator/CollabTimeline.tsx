@@ -1,5 +1,10 @@
+import Link from 'next/link'
 import { ExternalLink, Tag } from 'lucide-react'
 import type { Collaboration } from '@/types'
+
+function brandSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
 
 interface CollabTimelineProps {
   collabs: Collaboration[]
@@ -51,7 +56,13 @@ export function CollabTimeline({ collabs }: CollabTimelineProps) {
           {/* Content */}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold">{c.brand.name}</span>
+              <Link
+                href={`/brand/${brandSlug(c.brand.name)}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-sm font-semibold hover:text-brand-600 hover:underline transition-colors"
+              >
+                {c.brand.name}
+              </Link>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${DEAL_COLORS[c.deal_type]}`}
               >

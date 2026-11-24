@@ -301,7 +301,13 @@ function renderPage(
                       {creator.recent_brands.slice(0, 3).map((b, i) => (
                         <span key={`${b}-${i}`} className="inline-flex items-center gap-1">
                           {i > 0 && <span className="text-border">·</span>}
-                          <span className="font-medium text-foreground">{b}</span>
+                          <Link
+                            href={`/brand/${b.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="font-medium text-foreground hover:text-brand-600 hover:underline transition-colors"
+                          >
+                            {b}
+                          </Link>
                         </span>
                       ))}
                       {creator.recent_brands.length > 3 && (
@@ -332,7 +338,7 @@ function renderPage(
           )}
         </div>
       )}
-      {results.length === 0 && q && <LiveLookup query={q} />}
+      {q && (results.length === 0 || results.every(r => r.platform === 'youtube')) && <LiveLookup query={q} />}
     </div>
   )
 }

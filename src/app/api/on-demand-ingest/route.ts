@@ -8,6 +8,7 @@ const sb = createClient(
 const YT_KEY = process.env.YOUTUBE_API_KEY!
 const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY!
 const IG_API_HOST = 'instagram-public-bulk-scraper.p.rapidapi.com'
+const IG28_API_HOST = 'instagram28.p.rapidapi.com'
 
 // ── Disclosure detection ──────────────────────────────────────────────────────
 
@@ -201,6 +202,17 @@ const INDIAN_BRANDS: Record<string, { category: string; is_d2c: boolean }> = {
   Supertails: { category: 'D2C Pet Care', is_d2c: true },
 }
 
+// ── Brand channel guard ───────────────────────────────────────────────────────
+// Rejects YouTube channels owned by brands (e.g. "Dot & Key Skincare") so they
+// don't get indexed as creators. Checks if the channel title starts with a known
+// brand name — brand channels consistently name themselves after the brand.
+function isBrandChannel(channelTitle: string): boolean {
+  const lower = channelTitle.toLowerCase().trim()
+  return Object.keys(INDIAN_BRANDS).some(brand =>
+    lower.startsWith(brand.toLowerCase())
+  )
+}
+
 // ── Category inference ────────────────────────────────────────────────────────
 
 function inferCategory(title: string, description: string): string {
@@ -251,6 +263,19 @@ interface YTChannel {
   description: string
   subscriberCount: string
   handle: string
+  instagramHandle?: string
+}
+
+function extractInstagramHandle(profileLinks: Array<{ url?: string }> | undefined, description: string): string | undefined {
+  // 1. Check profileLinks (most reliable — creator-set social links)
+  for (const link of profileLinks ?? []) {
+    const m = link.url?.match(/instagram\.com\/([a-zA-Z0-9._]+)\/?/i)
+    if (m?.[1] && m[1] !== 'p' && m[1] !== 'explore') return m[1]
+  }
+  // 2. Fall back to parsing description
+  const m = description.match(/instagram\.com\/([a-zA-Z0-9._]+)\/?/i)
+    ?? description.match(/(?:instagram|ig)[:\s@•|]+@?([a-zA-Z0-9._]{3,30})/i)
+  return m?.[1] ?? undefined
 }
 
 interface YTVideo {
@@ -266,7 +291,7 @@ interface YTVideo {
 async function lookupByHandle(handle: string): Promise<YTChannel | null> {
   try {
     const url = new URL('https://www.googleapis.com/youtube/v3/channels')
-    url.searchParams.set('part', 'snippet,statistics')
+    url.searchParams.set('part', 'snippet,statistics,brandingSettings')
     url.searchParams.set('forHandle', handle)
     url.searchParams.set('key', YT_KEY)
     const res = await fetch(url.toString(), { signal: AbortSignal.timeout(3000) })
@@ -275,12 +300,14 @@ async function lookupByHandle(handle: string): Promise<YTChannel | null> {
     if (!item) return null
     // Skip channels with 0 subscribers — likely a dead/secondary account (e.g., bhuvan.bam22)
     if (!item.statistics?.subscriberCount || item.statistics.subscriberCount === '0') return null
+    const description = item.snippet.description ?? ''
     return {
       channelId: item.id,
       title: item.snippet.title,
-      description: item.snippet.description ?? '',
+      description,
       subscriberCount: item.statistics.subscriberCount ?? '0',
       handle: (item.snippet.customUrl ?? item.id).replace('@', ''),
+      instagramHandle: extractInstagramHandle(item.brandingSettings?.channel?.profileLinks, description),
     }
   } catch {
     return null
@@ -303,19 +330,21 @@ async function searchChannel(query: string): Promise<YTChannel | null> {
     if (!channelId) return null
 
     const detailUrl = new URL('https://www.googleapis.com/youtube/v3/channels')
-    detailUrl.searchParams.set('part', 'snippet,statistics')
+    detailUrl.searchParams.set('part', 'snippet,statistics,brandingSettings')
     detailUrl.searchParams.set('id', channelId)
     detailUrl.searchParams.set('key', YT_KEY)
     const detailRes = await fetch(detailUrl.toString(), { signal: AbortSignal.timeout(3000) })
     const detailData = await detailRes.json()
     const item = detailData.items?.[0]
     if (!item) return null
+    const description = item.snippet.description ?? ''
     return {
       channelId: item.id,
       title: item.snippet.title,
-      description: item.snippet.description ?? '',
+      description,
       subscriberCount: item.statistics.subscriberCount ?? '0',
       handle: (item.snippet.customUrl ?? item.id).replace('@', ''),
+      instagramHandle: extractInstagramHandle(item.brandingSettings?.channel?.profileLinks, description),
     }
   } catch {
     return null
@@ -593,6 +622,101 @@ async function insertIGCollab(
   }, { onConflict: 'creator_id,brand_id,collab_date', ignoreDuplicates: true })
 }
 
+// ── Instagram handle discovery ────────────────────────────────────────────────
+
+function nameToHandleGuesses(name: string): string[] {
+  const clean = name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
+  const parts = clean.split(/\s+/).filter(Boolean)
+  if (parts.length < 2) return []
+  const [first, last] = parts
+  const full = parts.join('')
+  return [...new Set([
+    full,                                   // mithilapalkar
+    parts.join('.'),                        // mithila.palkar
+    parts.join('_'),                        // mithila_palkar
+    `${first.slice(0, 2)}${last}official`, // mipalkarofficial ← Mithila Palkar-style handles
+    `${full}official`,                      // mithilapalkarofficial
+  ])]
+}
+
+async function searchInstagramByName(name: string): Promise<Array<{ username: string; followers: number }>> {
+  try {
+    const url = new URL(`https://${IG28_API_HOST}/search`)
+    url.searchParams.set('search', name)
+    const res = await fetch(url.toString(), {
+      headers: {
+        'x-rapidapi-key': RAPIDAPI_KEY,
+        'x-rapidapi-host': IG28_API_HOST,
+      },
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) return []
+    const json = await res.json()
+    const users: Array<Record<string, unknown>> =
+      json?.data?.users ?? json?.users ?? json?.items ?? []
+    return users
+      .map(entry => {
+        const u = (entry?.user ?? entry) as Record<string, unknown>
+        const username = u?.username as string | undefined
+        const followers = Number(u?.follower_count ?? u?.followers_count ?? u?.followers ?? 0)
+        return username ? { username, followers } : null
+      })
+      .filter((x): x is { username: string; followers: number } => x !== null)
+      .sort((a, b) => b.followers - a.followers)
+  } catch {
+    return []
+  }
+}
+
+async function lookupInstagram(channel: YTChannel): Promise<{ profile: IGProfile; posts: IGPost[] } | null> {
+  if (!RAPIDAPI_KEY) return null
+
+  const ytSubs = parseInt(channel.subscriberCount || '0', 10)
+
+  // Reject profiles whose follower count is implausibly low relative to YT subs —
+  // catches fan/impersonator accounts that share the same name pattern.
+  // Floor at 1000 so we don't reject genuinely small creators.
+  const isPlausible = (followers: number) =>
+    followers >= Math.max(1000, ytSubs * 0.05)
+
+  // 1. Known handle from brandingSettings/description — most reliable, skip plausibility check
+  if (channel.instagramHandle) {
+    const [profile, posts] = await Promise.all([
+      scrapeInstagramProfile(channel.instagramHandle),
+      scrapeInstagramPosts(channel.instagramHandle),
+    ])
+    if (profile?.username) return { profile, posts }
+  }
+
+  // 2. Name-derived guesses — profile-only in parallel, then posts for winner
+  const guesses = nameToHandleGuesses(channel.title)
+  if (!guesses.length) return null
+
+  const profiles = await Promise.all(guesses.map(h => scrapeInstagramProfile(h)))
+  // Pick the account with the most followers among plausible matches — avoids fan/impersonator
+  // accounts with 10K–50K followers winning over the real creator's main account.
+  const plausible = profiles.filter((p): p is IGProfile => !!(p?.username && isPlausible(p.followersCount ?? 0)))
+  const winner = plausible.sort((a, b) => (b.followersCount ?? 0) - (a.followersCount ?? 0))[0] ?? null
+  if (winner) {
+    const posts = await scrapeInstagramPosts(winner.username)
+    return { profile: winner, posts }
+  }
+
+  // 3. Name search via instagram28 — catches creators whose IG handle differs from their name
+  //    Returns candidates sorted by followers desc; apply the same isPlausible gate so we
+  //    skip fan/impersonator accounts and pick the real creator.
+  const candidates = await searchInstagramByName(channel.title)
+  const topCandidate = candidates.find(c => isPlausible(c.followers))
+  if (!topCandidate) return null
+
+  const [profile, posts] = await Promise.all([
+    scrapeInstagramProfile(topCandidate.username),
+    scrapeInstagramPosts(topCandidate.username),
+  ])
+  if (profile?.username) return { profile, posts }
+  return null
+}
+
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -617,7 +741,7 @@ export async function POST(req: NextRequest) {
         scrapeInstagramPosts(q),
       ])
 
-      if (igProfile?.username) {
+      if (igProfile?.username && !isBrandChannel(igProfile.fullName ?? '')) {
         const category = inferCategory(igProfile.fullName ?? '', igProfile.biography ?? '')
         const followers = igProfile.followersCount ?? 0
         const avg_engagement_rate = calcIGEngagementRate(igPosts, followers)
@@ -697,8 +821,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Creator not found on YouTube or Instagram' }, { status: 404 })
     }
 
-    // 4. Fetch recent videos + compute stats
-    const videos = await fetchRecentVideos(channel.channelId)
+    // Reject brand-owned channels — these are marketing accounts, not influencers
+    if (isBrandChannel(channel.title)) {
+      return NextResponse.json({ error: 'Creator not found on YouTube or Instagram' }, { status: 404 })
+    }
+
+    // 4. Fetch recent videos + discover Instagram handle, in parallel
+    const [videos, igResult] = await Promise.all([
+      fetchRecentVideos(channel.channelId),
+      lookupInstagram(channel),
+    ])
+    const igProfile = igResult?.profile ?? null
+    const igPosts = igResult?.posts ?? []
     const statsVideos = videos.filter(v => v.viewCount && v.viewCount > 0)
     const avg_views = statsVideos.length > 0
       ? Math.round(statsVideos.reduce((s, v) => s + (v.viewCount ?? 0), 0) / statsVideos.length)
@@ -712,11 +846,31 @@ export async function POST(req: NextRequest) {
 
     const category = inferCategory(channel.title, channel.description)
 
-    // 5. Upsert creator (10s budget — Supabase sometimes hangs; still return data if it does)
-    const creatorId = await Promise.race([
-      upsertCreator(channel, category, { avg_views, avg_engagement_rate }),
-      new Promise<null>(resolve => setTimeout(() => resolve(null), 10000)),
-    ])
+    // 5. Upsert YT creator + IG creator (if found) in parallel
+    let igFollowers: number | undefined
+    let igAvgEngagementRate: number | undefined
+    let igAvgViews: number | undefined
+
+    const upsertPromises: Promise<unknown>[] = [
+      Promise.race([
+        upsertCreator(channel, category, { avg_views, avg_engagement_rate }),
+        new Promise<null>(resolve => setTimeout(() => resolve(null), 10000)),
+      ]),
+    ]
+
+    if (igProfile?.username) {
+      igFollowers = igProfile.followersCount ?? 0
+      igAvgEngagementRate = calcIGEngagementRate(igPosts, igFollowers)
+      igAvgViews = calcIGAvgViews(igPosts)
+      upsertPromises.push(
+        Promise.race([
+          upsertInstagramCreator(igProfile, category, { avg_engagement_rate: igAvgEngagementRate, avg_views: igAvgViews }),
+          new Promise<null>(resolve => setTimeout(() => resolve(null), 10000)),
+        ])
+      )
+    }
+
+    const [creatorId] = await Promise.all(upsertPromises) as [string | null, ...unknown[]]
 
     // 6. Extract brand mentions from video titles + descriptions, batch upsert collabs
     type YTCollab = { brand: { name: string; category: string; is_d2c: boolean }; video: YTVideo; tags: string[]; dealType: string }
@@ -760,8 +914,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       handle: channel.handle,
       name: channel.title,
-      platform: 'youtube',
+      platform: igProfile?.username ? 'both' : 'youtube',
       followers_youtube: parseInt(channel.subscriberCount || '0', 10),
+      followers_instagram: igFollowers,
       avg_views,
       avg_engagement_rate,
       collab_count: collabCount,

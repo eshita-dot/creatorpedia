@@ -91,7 +91,7 @@ export function LiveLookup({ query }: { query: string }) {
       {state === 'found' && result && (
         <>
           <p className="mb-3 text-xs text-muted-foreground">
-            Found on {result.platform === 'instagram' ? 'Instagram' : 'YouTube'} — indexed and ready:
+            Found on {result.platform === 'both' ? 'YouTube & Instagram' : result.platform === 'instagram' ? 'Instagram' : 'YouTube'} — indexed and ready:
           </p>
           <Link
             href={`/creator/${result.handle}`}

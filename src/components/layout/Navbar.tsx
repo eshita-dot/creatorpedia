@@ -40,6 +40,12 @@ export function Navbar() {
             </Link>
           )}
           <Link
+            href="/compare"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Compare Brands
+          </Link>
+          <Link
             href="/onboard"
             className="rounded-lg border border-brand-500/30 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 transition-colors"
           >
