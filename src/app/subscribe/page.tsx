@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Shield, Zap } from 'lucide-react'
-import { PLAN_PRICE_INR, PLAN_LABEL } from '@/lib/subscription'
+import { PLAN_PRICE_INR, PLAN_LABEL } from '@/lib/subscription-constants'
 
 declare global {
   interface Window {

@@ -6,9 +6,8 @@ const sb = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export const SESSION_COOKIE = 'cp_session'
-export const PLAN_PRICE_INR = 1499
-export const PLAN_LABEL = 'Agency Early Access'
+import { SESSION_COOKIE, PLAN_PRICE_INR, PLAN_LABEL } from './subscription-constants'
+export { SESSION_COOKIE, PLAN_PRICE_INR, PLAN_LABEL }
 
 export interface Subscription {
   id: string
