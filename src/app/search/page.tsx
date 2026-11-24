@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { formatFollowers, regionLabel } from '@/lib/mock-data'
 import { SearchFiltersPanel } from './SearchFiltersPanel'
 import { LiveLookup } from '@/components/search/LiveLookup'
+import { BrandLink } from './BrandLink'
 import type { SearchResult } from '@/types'
 
 interface SearchPageProps {
@@ -301,13 +302,7 @@ function renderPage(
                       {creator.recent_brands.slice(0, 3).map((b, i) => (
                         <span key={`${b}-${i}`} className="inline-flex items-center gap-1">
                           {i > 0 && <span className="text-border">·</span>}
-                          <Link
-                            href={`/brand/${b.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="font-medium text-foreground hover:text-brand-600 hover:underline transition-colors"
-                          >
-                            {b}
-                          </Link>
+                          <BrandLink name={b} />
                         </span>
                       ))}
                       {creator.recent_brands.length > 3 && (

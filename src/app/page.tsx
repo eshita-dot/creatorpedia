@@ -123,8 +123,8 @@ export default async function HomePage() {
             {
               title: 'Brand intelligence',
               body: "Look up any brand and see their full creator roster — tier mix, category breakdown, and avg engagement rate.",
-              href: '/brand/minimalist',
-              cta: 'Try a brand',
+              href: '/brand/mamaearth',
+              cta: 'Try Mamaearth',
             },
             {
               title: 'Competitive comparison',
