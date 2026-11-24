@@ -98,14 +98,14 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
       </Link>
 
       {/* Profile header */}
-      <div className="mb-6 flex items-start gap-4">
-        <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-xl font-bold text-white shadow-sm">
+      <div className="mb-8 flex items-start gap-5">
+        <div className="flex size-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-2xl font-bold text-white shadow-md">
           {creator.name.charAt(0)}
         </div>
 
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-bold">{creator.name}</h1>
+            <h1 className="text-2xl font-bold">{creator.name}</h1>
             {creator.verified && (
               <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950/50 dark:text-blue-400">
                 <CheckCircle2 className="size-3" />

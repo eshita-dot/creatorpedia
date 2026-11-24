@@ -66,11 +66,13 @@ export function MetricsGrid({ creator }: MetricsGridProps) {
       {metrics.map((m) => (
         <div
           key={m.label}
-          className="flex flex-col gap-1 rounded-lg border border-border bg-muted/30 p-3"
+          className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4"
         >
-          {m.icon}
-          <span className="text-lg font-bold">{m.value}</span>
-          <span className="text-[11px] text-muted-foreground">{m.label}</span>
+          <div className="flex items-center gap-1.5">
+            {m.icon}
+            <span className="text-[11px] text-muted-foreground">{m.label}</span>
+          </div>
+          <span className="text-2xl font-bold tracking-tight">{m.value}</span>
           {m.note && (
             <span className="text-[10px] text-muted-foreground/60 leading-tight">{m.note}</span>
           )}

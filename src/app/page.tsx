@@ -1,7 +1,15 @@
 export const dynamic = 'force-dynamic'
 
-import { Search, Zap, Shield, TrendingUp } from 'lucide-react'
+import Link from 'next/link'
+import { Search, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+
+const TRENDING = [
+  'skincare reels south india',
+  'finance youtubers',
+  'mumbai food bloggers',
+  'hindi tech reviews',
+]
 
 const CATEGORIES = ['Beauty', 'Fashion', 'Finance', 'Food', 'Fitness', 'Tech', 'Travel', 'Gaming']
 
@@ -13,68 +21,65 @@ export default async function HomePage() {
       supabase.from('collaborations').select('*', { count: 'exact', head: true }),
       supabase.from('brands').select('*', { count: 'exact', head: true }),
     ])
+
   return (
     <div className="flex flex-col">
+
       {/* Hero */}
-      <section className="relative flex flex-col items-center justify-center px-4 pt-20 pb-16 sm:pt-28 sm:pb-20">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-brand-50/60 to-background" />
+      <section className="relative flex flex-col items-center justify-center px-4 pt-24 pb-20 sm:pt-32 sm:pb-24 text-center overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(124,58,237,0.08),transparent)]" />
 
-        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
-          <Zap className="size-3" />
-          India&apos;s first influencer intelligence database
-        </div>
-
-        <h1 className="mb-3 text-center text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
-          Find any creator.{' '}
+        <h1 className="mb-5 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl leading-[1.1]">
+          Every Indian creator.{' '}
           <span className="text-brand-600">Every brand deal.</span>
         </h1>
-        <p className="mb-8 max-w-xl text-center text-base text-muted-foreground sm:text-lg">
-          Search Indian influencers and creators. See their full brand collaboration history,
-          deal types, and estimated pricing — in seconds.
+
+        <p className="mb-10 max-w-lg text-base text-muted-foreground sm:text-lg leading-relaxed">
+          Search any creator and instantly see who they&apos;ve worked with,
+          what was paid, and what wasn&apos;t.
         </p>
 
-        {/* Search form */}
+        {/* Search */}
         <form method="GET" action="/search" className="w-full max-w-2xl">
-          <div className="flex gap-2 rounded-xl border border-border bg-background p-1.5 shadow-sm ring-1 ring-brand-500/10 focus-within:ring-brand-500/30 transition-all">
-            <Search className="ml-2 mt-2.5 size-4 shrink-0 text-muted-foreground" />
+          <div className="flex items-center gap-2 rounded-2xl border border-border bg-background px-4 py-3 shadow-md ring-1 ring-brand-500/10 focus-within:ring-2 focus-within:ring-brand-500/30 transition-all">
+            <Search className="size-4 shrink-0 text-muted-foreground" />
             <input
               name="q"
               type="text"
-              placeholder="Search by creator name, handle, brand, or niche…"
-              className="flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground"
+              placeholder="Search by creator, brand, or niche…"
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               autoFocus
             />
             <button
               type="submit"
-              className="shrink-0 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
+              className="shrink-0 rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
             >
               Search
             </button>
           </div>
 
-          {/* Filter pills */}
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Filter:</span>
-            <select
-              name="category"
-              className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none"
-            >
-              <option value="">All Categories</option>
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c.toLowerCase()}>{c}</option>
-              ))}
-            </select>
+          <div className="mt-3 hidden items-center gap-3 sm:flex">
+            <span className="text-xs text-muted-foreground">Browse by:</span>
+            {CATEGORIES.map((c) => (
+              <a
+                key={c}
+                href={`/search?category=${c.toLowerCase()}`}
+                className="text-xs text-muted-foreground hover:text-brand-600 transition-colors"
+              >
+                {c}
+              </a>
+            ))}
           </div>
         </form>
 
-        {/* Trending searches */}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs">
-          <span className="text-muted-foreground">Trending:</span>
-          {['skincare reels south india', 'finance youtubers', 'mumbai food bloggers', 'hindi tech reviews'].map((q) => (
+        {/* Trending */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <span className="text-xs text-muted-foreground">Trending:</span>
+          {TRENDING.map((q) => (
             <a
               key={q}
               href={`/search?q=${encodeURIComponent(q)}`}
-              className="rounded-full border border-border px-3 py-1 text-muted-foreground hover:border-brand-300 hover:text-brand-600 transition-colors"
+              className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:border-brand-300 hover:text-brand-600 transition-colors"
             >
               {q}
             </a>
@@ -82,51 +87,86 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Stats bar */}
-      <section className="border-y border-border bg-muted/30">
-        <div className="mx-auto grid max-w-4xl grid-cols-3 divide-x divide-border">
+      {/* Stats */}
+      <section className="border-y border-border bg-muted/20">
+        <div className="mx-auto grid max-w-3xl grid-cols-3 divide-x divide-border">
           {[
-            { label: 'Creators Indexed', value: (creatorCount ?? 0).toLocaleString('en-IN') },
-            { label: 'Brand Collabs Tracked', value: (collabCount ?? 0).toLocaleString('en-IN') },
-            { label: 'Indian Brands in DB', value: (brandCount ?? 0).toLocaleString('en-IN') },
+            { label: 'Creators indexed', value: (creatorCount ?? 0).toLocaleString('en-IN') },
+            { label: 'Brand collabs tracked', value: (collabCount ?? 0).toLocaleString('en-IN') },
+            { label: 'Indian brands', value: (brandCount ?? 0).toLocaleString('en-IN') },
           ].map((s) => (
-            <div key={s.label} className="flex flex-col items-center py-5 px-4">
+            <div key={s.label} className="flex flex-col items-center py-6 px-4">
               <span className="text-2xl font-bold text-brand-600">{s.value}</span>
-              <span className="mt-0.5 text-xs text-muted-foreground">{s.label}</span>
+              <span className="mt-1 text-xs text-muted-foreground">{s.label}</span>
             </div>
           ))}
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-        <h2 className="mb-10 text-center text-xl font-bold">Built for serious MarTech teams</h2>
-        <div className="grid gap-6 sm:grid-cols-3">
+      {/* What you get */}
+      <section className="mx-auto max-w-5xl px-4 py-20 sm:px-6">
+        <div className="mb-12 text-center">
+          <h2 className="text-2xl font-bold tracking-tight">Stop guessing. Start knowing.</h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Everything you need to research creators and brands — in one place.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
           {[
             {
-              icon: Search,
-              title: 'Deep-scan any creator',
-              body: "See every brand they've worked with, the deal type (paid/barter/gifted), approximate date, and the original disclosure post.",
+              title: 'Full collab history',
+              body: "See every brand a creator has worked with — deal type, date, and whether it was paid or organic. No more manual scrolling.",
+              href: '/search',
+              cta: 'Search creators',
             },
             {
-              icon: TrendingUp,
-              title: 'Pricing intelligence',
-              body: 'Know their tier (nano → mega), estimated reel rate, and how their rate has shifted — before you send that first DM.',
+              title: 'Brand intelligence',
+              body: "Look up any brand and see their full creator roster — tier mix, category breakdown, and avg engagement rate.",
+              href: '/brand/minimalist',
+              cta: 'Try a brand',
             },
             {
-              icon: Shield,
-              title: 'Legally sourced data',
-              body: 'All data comes from ASCI-mandated public disclosures, official YouTube/Meta APIs, and creator-verified opt-in — no scraping.',
+              title: 'Competitive comparison',
+              body: "Compare up to 4 brands side by side. See which creators they share and how their strategies differ.",
+              href: '/compare',
+              cta: 'Compare brands',
             },
           ].map((f) => (
-            <div key={f.title} className="rounded-xl border border-border p-5">
-              <f.icon className="mb-3 size-5 text-brand-600" />
-              <h3 className="mb-1.5 text-sm font-semibold">{f.title}</h3>
-              <p className="text-xs leading-relaxed text-muted-foreground">{f.body}</p>
+            <div
+              key={f.title}
+              className="group flex flex-col rounded-2xl border border-border bg-card p-6 hover:border-brand-200 hover:shadow-sm transition-all"
+            >
+              <h3 className="mb-2 text-sm font-semibold">{f.title}</h3>
+              <p className="flex-1 text-xs leading-relaxed text-muted-foreground">{f.body}</p>
+              <Link
+                href={f.href}
+                className="mt-5 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
+              >
+                {f.cta}
+                <ArrowRight className="size-3" />
+              </Link>
             </div>
           ))}
         </div>
       </section>
+
+      {/* CTA strip */}
+      <section className="border-t border-border bg-muted/20">
+        <div className="mx-auto flex max-w-3xl flex-col items-center gap-4 px-4 py-14 text-center sm:flex-row sm:justify-between sm:text-left">
+          <div>
+            <p className="text-base font-semibold">Want full access?</p>
+            <p className="mt-1 text-sm text-muted-foreground">Early access open to 10 agencies. ₹1,499/month.</p>
+          </div>
+          <Link
+            href="/early-access"
+            className="shrink-0 rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors"
+          >
+            Apply for early access
+          </Link>
+        </div>
+      </section>
+
     </div>
   )
 }
