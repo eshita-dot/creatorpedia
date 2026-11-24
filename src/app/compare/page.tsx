@@ -77,7 +77,7 @@ export default async function ComparePage({ searchParams }: ComparePageProps) {
 
       const map = new Map<string, { creator: Creator; latestDate: string; isConfirmed: boolean }>()
       for (const row of data ?? []) {
-        const c = row.creators as Creator | null
+        const c = row.creators as unknown as Creator | null
         if (!c?.id) continue
         const rowConfirmed =
           row.deal_type !== 'unknown' ||
