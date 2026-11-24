@@ -359,7 +359,7 @@ async function fetchRecentVideos(channelId: string): Promise<YTVideo[]> {
     const plUrl = new URL('https://www.googleapis.com/youtube/v3/playlistItems')
     plUrl.searchParams.set('part', 'contentDetails')
     plUrl.searchParams.set('playlistId', playlistId)
-    plUrl.searchParams.set('maxResults', '12')
+    plUrl.searchParams.set('maxResults', '50')
     plUrl.searchParams.set('key', YT_KEY)
     const plRes = await fetch(plUrl.toString(), { signal: AbortSignal.timeout(3000) })
     const plData = await plRes.json()
@@ -502,7 +502,7 @@ async function scrapeInstagramPosts(handle: string): Promise<IGPost[]> {
   try {
     const url = new URL(`https://${IG_API_HOST}/v1/user_posts`)
     url.searchParams.set('username_or_id', handle)
-    url.searchParams.set('count', '12')
+    url.searchParams.set('count', '50')
     const res = await fetch(url.toString(), {
       headers: {
         'x-rapidapi-key': RAPIDAPI_KEY,
