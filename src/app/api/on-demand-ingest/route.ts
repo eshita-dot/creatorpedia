@@ -870,7 +870,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const [creatorId] = await Promise.all(upsertPromises) as [string | null, ...unknown[]]
+    const [creatorId, igCreatorId] = await Promise.all(upsertPromises) as [string | null, string | null | undefined]
 
     // 6. Extract brand mentions from video titles + descriptions, batch upsert collabs
     type YTCollab = { brand: { name: string; category: string; is_d2c: boolean }; video: YTVideo; tags: string[]; dealType: string }
@@ -911,6 +911,50 @@ export async function POST(req: NextRequest) {
       ])
     }
 
+    // 7. Extract brand mentions from Instagram posts, store as IG collabs
+    let igCollabCount = 0
+    if (igCreatorId && igPosts.length > 0) {
+      type IGCollab = { brand: { name: string; category: string; is_d2c: boolean }; post: IGPost; tags: string[]; dealType: string }
+      const toIndexIG: IGCollab[] = []
+      for (const post of igPosts) {
+        const caption = getPostCaption(post)
+        const isSponsored = post.paidPartnership === true || DISCLOSURE_PATTERNS.some(p => p.test(caption))
+        if (!isSponsored && !caption) continue
+        const brands = extractBrandMentions(caption)
+        if (!brands.length) continue
+        const tags = [
+          ...(post.paidPartnership ? ['paid partnership'] : []),
+          ...extractDisclosureTags(caption),
+        ]
+        const dealType = post.paidPartnership ? 'paid' : inferDealType(caption)
+        for (const brand of brands) toIndexIG.push({ brand, post, tags, dealType })
+      }
+
+      if (toIndexIG.length > 0) {
+        const latestIGByBrand = new Map<string, typeof toIndexIG[0]>()
+        for (const item of toIndexIG) {
+          const ex = latestIGByBrand.get(item.brand.name)
+          const itemDate = getPostDate(item.post)
+          if (!ex || itemDate > getPostDate(ex.post)) latestIGByBrand.set(item.brand.name, item)
+        }
+        const dedupedIG = [...latestIGByBrand.values()]
+        const igCollabBudget = new Promise<void>(resolve => setTimeout(resolve, 5000))
+        await Promise.race([
+          (async () => {
+            const brandIds = await Promise.all(dedupedIG.map(x => upsertBrand(x.brand)))
+            const brandIdMap = new Map(dedupedIG.map((x, i) => [x.brand.name, brandIds[i]]))
+            await Promise.all(dedupedIG.map(x => {
+              const brandId = brandIdMap.get(x.brand.name)
+              if (!brandId) return
+              igCollabCount++
+              return insertIGCollab(igCreatorId, brandId, x.post, x.tags, x.dealType)
+            }))
+          })(),
+          igCollabBudget,
+        ])
+      }
+    }
+
     return NextResponse.json({
       handle: channel.handle,
       name: channel.title,
@@ -919,7 +963,7 @@ export async function POST(req: NextRequest) {
       followers_instagram: igFollowers,
       avg_views,
       avg_engagement_rate,
-      collab_count: collabCount,
+      collab_count: collabCount + igCollabCount,
     })
   } catch (e) {
     console.error('[on-demand-ingest] error:', e)
