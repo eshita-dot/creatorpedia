@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { Search, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { BrandSearchInput } from '@/components/search/BrandSearchInput'
 
 const TRENDING = [
   'skincare reels south india',
@@ -113,41 +114,44 @@ export default async function HomePage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            {
-              title: 'Full collab history',
-              body: "See every brand a creator has worked with — deal type, date, and whether it was paid or organic. No more manual scrolling.",
-              href: '/search',
-              cta: 'Search creators',
-            },
-            {
-              title: 'Brand intelligence',
-              body: "Look up any brand and see their full creator roster — tier mix, category breakdown, and avg engagement rate.",
-              href: '/brand/mamaearth',
-              cta: 'Try Mamaearth',
-            },
-            {
-              title: 'Competitive comparison',
-              body: "Compare up to 4 brands side by side. See which creators they share and how their strategies differ.",
-              href: '/compare',
-              cta: 'Compare brands',
-            },
-          ].map((f) => (
-            <div
-              key={f.title}
-              className="group flex flex-col rounded-2xl border border-border bg-card p-6 hover:border-brand-200 hover:shadow-sm transition-all"
+            {/* Full collab history */}
+          <div className="group flex flex-col rounded-2xl border border-border bg-card p-6 hover:border-brand-200 hover:shadow-sm transition-all">
+            <h3 className="mb-2 text-sm font-semibold">Full collab history</h3>
+            <p className="flex-1 text-xs leading-relaxed text-muted-foreground">
+              See every brand a creator has worked with — deal type, date, and whether it was paid or organic. No more manual scrolling.
+            </p>
+            <Link
+              href="/search"
+              className="mt-5 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
             >
-              <h3 className="mb-2 text-sm font-semibold">{f.title}</h3>
-              <p className="flex-1 text-xs leading-relaxed text-muted-foreground">{f.body}</p>
-              <Link
-                href={f.href}
-                className="mt-5 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
-              >
-                {f.cta}
-                <ArrowRight className="size-3" />
-              </Link>
-            </div>
-          ))}
+              Search creators
+              <ArrowRight className="size-3" />
+            </Link>
+          </div>
+
+          {/* Brand intelligence — live search */}
+          <div className="flex flex-col rounded-2xl border border-border bg-card p-6 hover:border-brand-200 hover:shadow-sm transition-all">
+            <h3 className="mb-2 text-sm font-semibold">Brand intelligence</h3>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Look up any brand and see their full creator roster — tier mix, category breakdown, and avg engagement rate.
+            </p>
+            <BrandSearchInput />
+          </div>
+
+          {/* Competitive comparison */}
+          <div className="group flex flex-col rounded-2xl border border-border bg-card p-6 hover:border-brand-200 hover:shadow-sm transition-all">
+            <h3 className="mb-2 text-sm font-semibold">Competitive comparison</h3>
+            <p className="flex-1 text-xs leading-relaxed text-muted-foreground">
+              Compare up to 4 brands side by side. See which creators they share and how their strategies differ.
+            </p>
+            <Link
+              href="/compare"
+              className="mt-5 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
+            >
+              Compare brands
+              <ArrowRight className="size-3" />
+            </Link>
+          </div>
         </div>
       </section>
 
