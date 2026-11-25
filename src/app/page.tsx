@@ -5,13 +5,6 @@ import { Search, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { BrandSearchInput } from '@/components/search/BrandSearchInput'
 
-const TRENDING = [
-  'skincare reels south india',
-  'finance youtubers',
-  'mumbai food bloggers',
-  'hindi tech reviews',
-]
-
 const CATEGORIES = ['Beauty', 'Fashion', 'Finance', 'Food', 'Fitness', 'Tech', 'Travel', 'Gaming', 'Automobile']
 
 export default async function HomePage() {
@@ -73,19 +66,6 @@ export default async function HomePage() {
           </div>
         </form>
 
-        {/* Trending */}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-          <span className="text-xs text-muted-foreground">Trending:</span>
-          {TRENDING.map((q) => (
-            <a
-              key={q}
-              href={`/search?q=${encodeURIComponent(q)}`}
-              className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground hover:border-brand-300 hover:text-brand-600 transition-colors"
-            >
-              {q}
-            </a>
-          ))}
-        </div>
       </section>
 
       {/* Stats */}
