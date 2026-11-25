@@ -126,7 +126,7 @@ export function PaywallGate({ hiddenCount, creatorName, creatorId }: PaywallGate
           className="flex items-center gap-2 rounded-lg bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-70 transition-colors shadow-sm"
         >
           {loading && <Loader2 className="size-3.5 animate-spin" />}
-          Unlock Full Profile — ₹499
+          Unlock Full Profile · ₹499
         </button>
         <p className="mt-2 text-[10px] text-muted-foreground">One-time payment · Instant access</p>
       </div>

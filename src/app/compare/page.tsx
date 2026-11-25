@@ -158,7 +158,7 @@ export default async function ComparePage({ searchParams }: ComparePageProps) {
         </Link>
         <h1 className="text-2xl font-bold">Competitive Intelligence</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Compare up to 4 brands — see which influencers they share and how their strategies differ.
+          Compare up to 4 brands side by side. Spot shared creators and strategy gaps.
         </p>
       </div>
 

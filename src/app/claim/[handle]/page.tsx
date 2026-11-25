@@ -66,7 +66,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
       {/* Benefits */}
       <div className="mb-8 grid gap-3 sm:grid-cols-3">
         {[
-          { icon: TrendingUp, title: 'Set your rates', body: 'Show brands your real pricing — stop being lowballed.' },
+          { icon: TrendingUp, title: 'Set your rates', body: 'Show brands your real rates. Stop getting lowballed.' },
           { icon: Shield, title: 'Get verified', body: 'Verified badge + higher search ranking.' },
           { icon: CheckCircle2, title: 'Inbound deals', body: 'Brands DM verified creators directly.' },
         ].map((b) => (

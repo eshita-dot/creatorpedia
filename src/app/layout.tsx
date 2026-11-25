@@ -12,7 +12,7 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: 'The Creatorpedia — India\'s Influencer Intelligence Engine',
+  title: 'The Creatorpedia | India\'s Influencer Intelligence Engine',
   description:
     'Search 4M+ Indian creators. Find who they\'ve worked with, what brands they\'ve done, and what it costs. Built for D2C brands, agencies & performance marketers.',
   keywords: 'influencer marketing India, creator database, brand collaborations, influencer search',

@@ -146,7 +146,7 @@ export function ClaimCompleteForm({ creator, userEmail }: { creator: Creator; us
       <section>
         <h3 className="mb-1 text-sm font-semibold">Rate card</h3>
         <p className="mb-4 text-xs text-muted-foreground">
-          Shown as a range on your profile. Brands see this before reaching out — it filters out lowball enquiries.
+          Shown as a range on your profile. Brands see this before reaching out. Helps filter out lowball enquiries.
         </p>
         <div className="space-y-3">
           {[

@@ -204,7 +204,7 @@ function renderPage(
       <p className="mb-4 text-sm text-muted-foreground">
         {results.length > 0
           ? `${results.length} creator${results.length !== 1 ? 's' : ''} found${q ? ` for "${q}"` : ''}${results.length === 100 ? ' (showing top 100)' : ''}`
-          : `No creators found${q ? ` for "${q}"` : ''}${hasFilters ? ' — try removing some filters' : ''}`}
+          : `No creators found${q ? ` for "${q}"` : ''}${hasFilters ? '. Try removing some filters.' : ''}`}
       </p>
 
       {results.length > 0 ? (

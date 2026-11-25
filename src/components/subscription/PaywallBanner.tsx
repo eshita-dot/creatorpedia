@@ -20,7 +20,7 @@ export function PaywallBanner({ hiddenCount, noun = 'results' }: PaywallBannerPr
             {hiddenCount} more {noun} hidden
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Subscribe to unlock full access — unlimited lookups, brand intel, and CSV export.
+            Unlimited lookups, brand intel, and CSV export.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -28,7 +28,7 @@ export function PaywallBanner({ hiddenCount, noun = 'results' }: PaywallBannerPr
             href="/subscribe"
             className="rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 transition-colors"
           >
-            Subscribe — ₹1,499/month
+            Subscribe · ₹1,499/month
           </Link>
           <Link
             href="/early-access"

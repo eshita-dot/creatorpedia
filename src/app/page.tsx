@@ -89,7 +89,7 @@ export default async function HomePage() {
         <div className="mb-12 text-center">
           <h2 className="text-2xl font-bold tracking-tight">Stop guessing. Start knowing.</h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            Everything you need to research creators and brands — in one place.
+            Creator and brand research without the spreadsheet grind.
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export default async function HomePage() {
           <div className="group flex flex-col rounded-2xl border border-border bg-card p-6 hover:border-brand-200 hover:shadow-sm transition-all">
             <h3 className="mb-2 text-sm font-semibold">Full collab history</h3>
             <p className="flex-1 text-xs leading-relaxed text-muted-foreground">
-              See every brand a creator has worked with — deal type, date, and whether it was paid or organic. No more manual scrolling.
+              See every brand deal a creator has done: what was paid, what wasn&apos;t, and when. No more manual scrolling.
             </p>
             <Link
               href="/search"
@@ -113,7 +113,7 @@ export default async function HomePage() {
           <div className="flex flex-col rounded-2xl border border-border bg-card p-6 hover:border-brand-200 hover:shadow-sm transition-all">
             <h3 className="mb-2 text-sm font-semibold">Brand intelligence</h3>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Look up any brand and see their full creator roster — tier mix, category breakdown, and avg engagement rate.
+              Look up a brand and see every creator they&apos;ve worked with. Tier mix, categories, avg engagement.
             </p>
             <BrandSearchInput />
           </div>

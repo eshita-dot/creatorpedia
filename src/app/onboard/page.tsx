@@ -29,7 +29,7 @@ export default function OnboardPage() {
           {
             icon: TrendingUp,
             title: 'Control your pricing narrative',
-            body: 'Set your own pricing tier and rates. Stop being lowballed — let brands see your real market value.',
+            body: 'Set your own pricing tier and rates. Stop getting lowballed — let brands see your real rates.',
           },
           {
             icon: Shield,

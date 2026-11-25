@@ -8,7 +8,7 @@ const FEATURES = [
   {
     icon: Search,
     title: 'Full collaboration history',
-    desc: 'Look up any creator and see every brand they\'ve worked with — deal type, date, and whether it was paid or organic.',
+    desc: 'See every brand deal a creator has done. Deal type, date, paid or not.',
   },
   {
     icon: BarChart2,
@@ -18,7 +18,7 @@ const FEATURES = [
   {
     icon: Users,
     title: 'Brand creator rosters',
-    desc: 'See every creator who has ever worked with a brand. Tier mix, category breakdown, avg engagement — all in one view.',
+    desc: 'See every creator a brand has worked with. Tier mix, category split, avg engagement.',
   },
   {
     icon: FileDown,
@@ -58,7 +58,7 @@ export default function EarlyAccessPage() {
       <div className="mb-16 text-center">
         <span className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700">
           <Lock className="size-3" />
-          Early Access — 10 spots only
+          Early Access · 10 spots only
         </span>
         <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl leading-tight">
           Every Indian creator.{' '}
