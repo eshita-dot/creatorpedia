@@ -16,7 +16,14 @@ const DEAL_COLORS: Record<string, string> = {
   paid: 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400',
   barter: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
   gifted: 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400',
-  unknown: 'bg-gray-100 text-gray-600',
+  unknown: 'bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400',
+}
+
+const DEAL_LABELS: Record<string, string> = {
+  paid: 'Paid',
+  barter: 'Barter',
+  gifted: 'Gifted',
+  unknown: 'Not Disclosed',
 }
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -66,9 +73,9 @@ export function CollabTimeline({ collabs }: CollabTimelineProps) {
                 {c.brand.name}
               </Link>
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-medium capitalize ${DEAL_COLORS[c.deal_type]}`}
+                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${DEAL_COLORS[c.deal_type] ?? DEAL_COLORS.unknown}`}
               >
-                {c.deal_type}
+                {DEAL_LABELS[c.deal_type] ?? c.deal_type}
               </span>
               <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                 {c.brand.category}
