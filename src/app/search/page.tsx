@@ -161,7 +161,24 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     )
   }
 
-  return renderPage(results, q, { category, platform, region, tier, language, minFollowers, maxFollowers, minEr, available, verified: verifiedOnly, sort, brand })
+  // If no creator results, check if the query matches a brand — show a suggestion
+  let brandSuggestion: { name: string; slug: string } | null = null
+  if (q.trim() && results.length === 0) {
+    const { data: matchedBrand } = await supabase
+      .from('brands')
+      .select('name')
+      .ilike('name', `%${q}%`)
+      .limit(1)
+      .single()
+    if (matchedBrand) {
+      brandSuggestion = {
+        name: matchedBrand.name,
+        slug: matchedBrand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      }
+    }
+  }
+
+  return renderPage(results, q, { category, platform, region, tier, language, minFollowers, maxFollowers, minEr, available, verified: verifiedOnly, sort, brand }, brandSuggestion)
 }
 
 function renderPage(
@@ -171,7 +188,8 @@ function renderPage(
     category: string; platform: string; region: string; tier: string
     language: string; minFollowers: string; maxFollowers: string; minEr: string
     available: boolean; verified: boolean; sort: string; brand: string
-  }
+  },
+  brandSuggestion: { name: string; slug: string } | null = null
 ) {
   const hasFilters = Object.entries(filters).some(([k, v]) =>
     k !== 'sort' ? Boolean(v) : Boolean(v)
@@ -322,14 +340,31 @@ function renderPage(
         </div>
       ) : (
         <div className="flex flex-col items-center py-12 text-center">
-          <p className="text-sm font-medium">Not in our database yet</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {q ? 'Checking YouTube right now…' : 'Try a different search term or remove some filters'}
-          </p>
-          {!q && (
-            <Link href="/search" className="mt-4 text-xs text-brand-600 hover:underline">
-              Clear all and start over
-            </Link>
+          {brandSuggestion ? (
+            <>
+              <p className="text-sm font-medium">No creator named &ldquo;{q}&rdquo;</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Did you mean the <strong>{brandSuggestion.name}</strong> brand?
+              </p>
+              <Link
+                href={`/brand/${brandSuggestion.slug}`}
+                className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 transition-colors"
+              >
+                View {brandSuggestion.name} Brand Intelligence →
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium">Not in our database yet</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {q ? 'Checking YouTube right now…' : 'Try a different search term or remove some filters'}
+              </p>
+              {!q && (
+                <Link href="/search" className="mt-4 text-xs text-brand-600 hover:underline">
+                  Clear all and start over
+                </Link>
+              )}
+            </>
           )}
         </div>
       )}
