@@ -368,7 +368,7 @@ function renderPage(
           )}
         </div>
       )}
-      {q && (results.length === 0 || results.every(r => r.platform === 'youtube')) && <LiveLookup query={q} />}
+      {q && !brandSuggestion && (results.length === 0 || results.every(r => r.platform === 'youtube')) && <LiveLookup query={q} />}
     </div>
   )
 }

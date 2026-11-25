@@ -128,9 +128,16 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
             )}
           </div>
 
-          {creator.bio && (
-            <p className="mt-1.5 text-sm text-muted-foreground">{creator.bio}</p>
-          )}
+          {creator.bio && (() => {
+            const cleaned = creator.bio
+              .replace(/https?:\/\/\S+/g, '')
+              .replace(/\s{2,}/g, ' ')
+              .trim()
+              .slice(0, 200)
+            return cleaned ? (
+              <p className="mt-1.5 text-sm text-muted-foreground">{cleaned}</p>
+            ) : null
+          })()}
 
           {/* Meta tags */}
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
