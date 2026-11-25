@@ -11,6 +11,7 @@ export type Category =
   | 'gaming'
   | 'entertainment'
   | 'parenting'
+  | 'automobile'
 export type Region = 'north-india' | 'south-india' | 'east-india' | 'west-india' | 'pan-india'
 export type DealType = 'paid' | 'barter' | 'gifted' | 'unknown'
 export type CollabSource = 'youtube_api' | 'asci_disclosure' | 'creator_verified' | 'brand_submission'

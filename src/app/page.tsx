@@ -12,7 +12,7 @@ const TRENDING = [
   'hindi tech reviews',
 ]
 
-const CATEGORIES = ['Beauty', 'Fashion', 'Finance', 'Food', 'Fitness', 'Tech', 'Travel', 'Gaming']
+const CATEGORIES = ['Beauty', 'Fashion', 'Finance', 'Food', 'Fitness', 'Tech', 'Travel', 'Gaming', 'Automobile']
 
 export default async function HomePage() {
   const supabase = await createClient()
