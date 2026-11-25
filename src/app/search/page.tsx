@@ -144,10 +144,11 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   let results: SearchResult[] = (rows ?? []).map((c) => {
     const collabs = c.collaborations ?? []
-    const recentBrands = collabs
-      .map((col: { brands: { name: string } | null }) => col.brands?.name)
-      .filter(Boolean)
-      .slice(0, 5) as string[]
+    const recentBrands = [...new Set(
+      collabs
+        .map((col: { brands: { name: string } | null }) => col.brands?.name)
+        .filter(Boolean) as string[]
+    )].slice(0, 5)
     return { ...c, recent_brands: recentBrands, collab_count: collabs.length }
   })
 
