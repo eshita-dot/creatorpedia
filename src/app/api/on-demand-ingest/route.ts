@@ -830,6 +830,71 @@ async function lookupInstagram(channel: YTChannel): Promise<{ profile: IGProfile
   return null
 }
 
+// ── Shared Instagram creator processing ───────────────────────────────────────
+
+async function processIGCreator(igProfile: IGProfile, igPosts: IGPost[]): Promise<NextResponse> {
+  const category = inferCategory(igProfile.fullName ?? '', igProfile.biography ?? '')
+  const followers = igProfile.followersCount ?? 0
+  const avg_engagement_rate = calcIGEngagementRate(igPosts, followers)
+  const avg_views = calcIGAvgViews(igPosts)
+
+  const creatorId = await Promise.race([
+    upsertInstagramCreator(igProfile, category, { avg_engagement_rate, avg_views }),
+    new Promise<null>(resolve => setTimeout(() => resolve(null), 2000)),
+  ])
+
+  type BrandCollab = {
+    brand: { name: string; category: string; is_d2c: boolean }
+    post: IGPost; tags: string[]; dealType: string
+  }
+  const toIndex: BrandCollab[] = []
+  for (const post of igPosts) {
+    const caption = getPostCaption(post)
+    const isSponsored = post.paidPartnership === true || DISCLOSURE_PATTERNS.some(p => p.test(caption))
+    if (!isSponsored && !caption) continue
+    const brands = extractBrandMentions(caption)
+    if (!brands.length) continue
+    const tags = [
+      ...(post.paidPartnership ? ['paid partnership'] : []),
+      ...extractDisclosureTags(caption),
+    ]
+    const dealType = post.paidPartnership ? 'paid' : inferDealType(caption)
+    for (const brand of brands) toIndex.push({ brand, post, tags, dealType })
+  }
+
+  if (creatorId && toIndex.length > 0) {
+    const latestIG = new Map<string, typeof toIndex[0]>()
+    for (const item of toIndex) {
+      const ex = latestIG.get(item.brand.name)
+      const itemDate = getPostDate(item.post)
+      if (!ex || itemDate > getPostDate(ex.post)) latestIG.set(item.brand.name, item)
+    }
+    const dedupedIG = [...latestIG.values()]
+    await Promise.race([
+      (async () => {
+        const brandIds = await Promise.all(dedupedIG.map(x => upsertBrand(x.brand)))
+        const brandIdMap = new Map(dedupedIG.map((x, i) => [x.brand.name, brandIds[i]]))
+        await Promise.all(dedupedIG.map(x => {
+          const brandId = brandIdMap.get(x.brand.name)
+          if (!brandId) return
+          return insertIGCollab(creatorId, brandId, x.post, x.tags, x.dealType)
+        }))
+      })(),
+      new Promise<void>(resolve => setTimeout(resolve, 5000)),
+    ])
+  }
+
+  return NextResponse.json({
+    handle: igProfile.username,
+    name: igProfile.fullName || igProfile.username,
+    platform: 'instagram',
+    followers_instagram: followers,
+    avg_engagement_rate,
+    avg_views,
+    collab_count: toIndex.length,
+  })
+}
+
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -847,86 +912,38 @@ export async function POST(req: NextRequest) {
     // 1. Try YouTube handle lookup (1 quota unit)
     let channel = isYouTubeHandleLike ? await lookupByHandle(q) : null
 
-    // 2. If handle-like and no YT match, try Instagram — profile + posts in parallel
+    // 2. If handle-like and no YT match, try Instagram directly
     if (!channel && isHandleLike && RAPIDAPI_KEY) {
       const [igProfile, igPosts] = await Promise.all([
         scrapeInstagramProfile(q),
         scrapeInstagramPosts(q),
       ])
-
       if (igProfile?.username && !isBrandChannel(igProfile.fullName ?? '')) {
-        const category = inferCategory(igProfile.fullName ?? '', igProfile.biography ?? '')
-        const followers = igProfile.followersCount ?? 0
-        const avg_engagement_rate = calcIGEngagementRate(igPosts, followers)
-        const avg_views = calcIGAvgViews(igPosts)
-
-        const creatorId = await Promise.race([
-          upsertInstagramCreator(igProfile, category, { avg_engagement_rate, avg_views }),
-          new Promise<null>(resolve => setTimeout(() => resolve(null), 2000)),
-        ])
-
-        // Extract brand mentions across all posts
-        type BrandCollab = {
-          brand: { name: string; category: string; is_d2c: boolean }
-          post: IGPost; tags: string[]; dealType: string
-        }
-        const toIndex: BrandCollab[] = []
-        for (const post of igPosts) {
-          const caption = getPostCaption(post)
-          const isSponsored = post.paidPartnership === true || DISCLOSURE_PATTERNS.some(p => p.test(caption))
-          if (!isSponsored && !caption) continue
-          const brands = extractBrandMentions(caption)
-          if (!brands.length) continue
-          const tags = [
-            ...(post.paidPartnership ? ['paid partnership'] : []),
-            ...extractDisclosureTags(caption),
-          ]
-          const dealType = post.paidPartnership ? 'paid' : inferDealType(caption)
-          for (const brand of brands) toIndex.push({ brand, post, tags, dealType })
-        }
-
-        // Deduplicate to latest post per brand, then batch upsert with 5s budget
-        if (creatorId && toIndex.length > 0) {
-          const latestIG = new Map<string, typeof toIndex[0]>()
-          for (const item of toIndex) {
-            const ex = latestIG.get(item.brand.name)
-            const itemDate = getPostDate(item.post)
-            if (!ex || itemDate > getPostDate(ex.post)) latestIG.set(item.brand.name, item)
-          }
-          const dedupedIG = [...latestIG.values()]
-          const igBudget = new Promise<void>(resolve => setTimeout(resolve, 5000))
-          await Promise.race([
-            (async () => {
-              const brandIds = await Promise.all(dedupedIG.map(x => upsertBrand(x.brand)))
-              const brandIdMap = new Map(dedupedIG.map((x, i) => [x.brand.name, brandIds[i]]))
-              await Promise.all(dedupedIG.map(x => {
-                const brandId = brandIdMap.get(x.brand.name)
-                if (!brandId) return
-                return insertIGCollab(creatorId, brandId, x.post, x.tags, x.dealType)
-              }))
-            })(),
-            igBudget,
-          ])
-        }
-
-        return NextResponse.json({
-          handle: igProfile.username,
-          name: igProfile.fullName || igProfile.username,
-          platform: 'instagram',
-          followers_instagram: followers,
-          avg_engagement_rate,
-          avg_views,
-          collab_count: toIndex.length,
-        })
+        return processIGCreator(igProfile, igPosts)
       }
     }
 
-    // 3. Fall back to YouTube channel search (100 quota units) — handles name queries too
+    // 3. Fall back to YouTube channel search (100 quota units)
     if (!channel) {
       const found = await searchChannel(q)
       // Discard micro-channels from search noise (< 1000 subs is not a creator)
       if (found && parseInt(found.subscriberCount || '0', 10) >= 1000) {
         channel = found
+      }
+    }
+
+    // 3b. For name queries, YouTube misses Instagram-first creators — try IG name search
+    if (!channel && !isHandleLike && RAPIDAPI_KEY) {
+      const candidates = await searchInstagramByName(q)
+      const top = candidates.find(c => c.followers >= 10000)
+      if (top) {
+        const [igProfile, igPosts] = await Promise.all([
+          scrapeInstagramProfile(top.username),
+          scrapeInstagramPosts(top.username),
+        ])
+        if (igProfile?.username && !isBrandChannel(igProfile.fullName ?? '')) {
+          return processIGCreator(igProfile, igPosts)
+        }
       }
     }
 
