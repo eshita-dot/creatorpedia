@@ -744,12 +744,24 @@ function nameToHandleGuesses(name: string): string[] {
   const [first, last] = parts
   const full = parts.join('')
   return [...new Set([
-    full,                                   // mithilapalkar
-    parts.join('.'),                        // mithila.palkar
-    parts.join('_'),                        // mithila_palkar
-    `${first.slice(0, 2)}${last}official`, // mipalkarofficial ← Mithila Palkar-style handles
-    `${full}official`,                      // mithilapalkarofficial
+    full,
+    parts.join('.'),
+    parts.join('_'),
+    `${first.slice(0, 2)}${last}official`,
+    `${full}official`,
   ])]
+}
+
+// Extended guesses for name-query path: adds numeric suffixes (birthday dates, jersey numbers)
+function nameToHandleGuessesExtended(name: string): string[] {
+  const base = nameToHandleGuesses(name)
+  const clean = name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
+  const parts = clean.split(/\s+/).filter(Boolean)
+  if (parts.length < 2) return base
+  const full = parts.join('')
+  const numSuffixes = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,18,22,23,24,25]
+  const withNums = numSuffixes.map(n => `${full}${n}`)
+  return [...new Set([...base, ...withNums])]
 }
 
 async function searchInstagramByName(name: string): Promise<Array<{ username: string; followers: number }>> {
@@ -932,17 +944,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3b. For name queries, YouTube misses Instagram-first creators — try IG name search
+    // 3b. For name queries, YouTube misses Instagram-first creators.
+    // IG search APIs are unreliable, so try handle guesses (base + number suffixes) in parallel.
     if (!channel && !isHandleLike && RAPIDAPI_KEY) {
-      const candidates = await searchInstagramByName(q)
-      const top = candidates.find(c => c.followers >= 10000)
-      if (top) {
-        const [igProfile, igPosts] = await Promise.all([
-          scrapeInstagramProfile(top.username),
-          scrapeInstagramPosts(top.username),
-        ])
-        if (igProfile?.username && !isBrandChannel(igProfile.fullName ?? '')) {
-          return processIGCreator(igProfile, igPosts)
+      const guesses = nameToHandleGuessesExtended(q)
+      if (guesses.length) {
+        const profiles = await Promise.all(guesses.map(h => scrapeInstagramProfile(h)))
+        const winner = profiles
+          .filter((p): p is IGProfile => !!(p?.username && (p.followersCount ?? 0) >= 10000))
+          .sort((a, b) => (b.followersCount ?? 0) - (a.followersCount ?? 0))[0] ?? null
+        if (winner && !isBrandChannel(winner.fullName ?? '')) {
+          const posts = await scrapeInstagramPosts(winner.username)
+          return processIGCreator(winner, posts)
         }
       }
     }
